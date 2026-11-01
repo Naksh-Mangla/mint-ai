@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mint AI — Automated E2E Test Suite</title>
+  <style>
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "Segoe UI", Roboto, sans-serif;
+      --font-mono: "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+      /* Apple Light Palette */
+      --bg-app: #F5F5F7;
+      --bg-card: rgba(255, 255, 255, 0.85);
+      --bg-surface: #FFFFFF;
+      --bg-glass: rgba(255, 255, 255, 0.75);
+      --text-main: #1D1D1F;
+      --text-muted: #6E6E73;
+      --border-subtle: rgba(0, 0, 0, 0.08);
+      --border-card: rgba(0, 0, 0, 0.06);
+
+      /* Mint Accent */
+      --mint-primary: #00A368;
+      --mint-hover: #00C781;
+      --mint-soft: #E8F8F2;
+      --mint-glow: rgba(0, 163, 104, 0.25);
+
+      /* Status Colors */
+      --color-pass: #34C759;
+      --color-pass-soft: #E8F9EE;
+      --color-fail: #FF3B30;
+      --color-fail-soft: #FDECEC;
+
+      /* Apple Spring & Radii */
+      --spring-snappy: cubic-bezier(0.2, 0.8, 0.2, 1);
+      --radius-card: 20px;
+      --radius-button: 12px;
+      --radius-pill: 9999px;
+      --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
+    }
+
+    [data-theme="dark"] {
+      --bg-app: #000000;
+      --bg-card: rgba(28, 28, 30, 0.85);
+      --bg-surface: #1C1C1E;
+      --bg-glass: rgba(28, 28, 30, 0.75);
+      --text-main: #F5F5F7;
+      --text-muted: #A1A1A6;
+      --border-subtle: rgba(255, 255, 255, 0.12);
+      --border-card: rgba(255, 255, 255, 0.08);
+
+      --mint-primary: #00E599;
+      --mint-hover: #33FFB2;
+      --mint-soft: rgba(0, 229, 153, 0.14);
+      --mint-glow: rgba(0, 229, 153, 0.35);
+
+      --color-pass: #30D158;
+      --color-pass-soft: rgba(48, 209, 88, 0.18);
+      --color-fail: #FF453A;
+      --color-fail-soft: rgba(255, 69, 58, 0.18);
+      --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.50);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-app);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding-bottom: 60px;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* Glass Header */
+    .test-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-glass);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--mint-soft);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 2px 8px var(--mint-glow);
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 18px;
+      border-radius: var(--radius-button);
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.18s var(--spring-snappy), background-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-primary {
+      background: var(--mint-primary);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px var(--mint-glow);
+    }
+
+    [data-theme="dark"] .btn-primary {
+      color: #000000;
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1040px;
+      margin: 28px auto 0;
+      padding: 0 20px;
+    }
+
+    /* Summary Dashboard Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .metric-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-value {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .metric-value.pass {
+      color: var(--color-pass);
+    }
+
+    .metric-value.fail {
+      color: var(--color-fail);
+    }
+
+    .metric-value.mint {
+      color: var(--mint-primary);
+    }
+
+    /* Filter Segmented Control */
+    .filters-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .filter-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-pill);
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .filter-chip.active {
+      background: var(--text-main);
+      color: var(--bg-surface);
+      border-color: var(--text-main);
+    }
+
+    /* Test Results List */
+    .results-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .result-row {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 14px;
+      padding: 14px 18px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      transition: transform 0.2s ease;
+    }
+
+    .result-row:hover {
+      transform: translateY(-1px);
+    }
+
+    .result-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .result-message {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .result-tier {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .result-details {
+      font-size: 12px;
+      color: var(--color-fail);
+      font-family: var(--font-mono);
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-pass {
+      background: var(--color-pass-soft);
+      color: var(--color-pass);
+    }
+
+    .badge-fail {
+      background: var(--color-fail-soft);
+      color: var(--color-fail);
+    }
+
+    /* Empty / Status State */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Glass Header -->
+  <header class="test-header">
+    <div class="brand-section">
+      <div class="brand-icon">🌱</div>
+      <div>
+        <div class="brand-title">Mint AI Test Runner</div>
+        <div class="brand-subtitle">Automated Multi-Tier Verification Suite</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" id="themeToggleBtn" onclick="toggleTheme()">🌓 Toggle Dark</button>
+      <button class="btn btn-primary" id="runBtn" onclick="executeTests()">▶ Run All Tests</button>
+    </div>
+  </header>
+
+  <!-- Content Container -->
+  <main class="container">
+
+    <!-- Dashboard Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">Total Assertions</span>
+        <span class="metric-value mint" id="metricTotal">--</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Passed</span>
+        <span class="metric-value pass" id="metricPassed">--</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Failed</span>
+        <span class="metric-value fail" id="metricFailed">--</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Execution Time</span>
+        <span class="metric-value" id="metricDuration">--</span>
+      </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="filters-bar" id="filtersBar">
+      <div class="filter-chip active" onclick="setFilter('ALL', this)">All Tests</div>
+      <div class="filter-chip" onclick="setFilter('Tier 1', this)">Tier 1: Feature Coverage</div>
+      <div class="filter-chip" onclick="setFilter('Tier 2', this)">Tier 2: Corner Cases</div>
+      <div class="filter-chip" onclick="setFilter('Tier 3', this)">Tier 3: Combinations</div>
+      <div class="filter-chip" onclick="setFilter('Tier 4', this)">Tier 4: Scenarios</div>
+      <div class="filter-chip" onclick="setFilter('FAIL_ONLY', this)">Failures Only</div>
+    </div>
+
+    <!-- Results List -->
+    <div class="results-container" id="resultsContainer">
+      <div class="empty-state">Running test suites...</div>
+    </div>
+
+  </main>
+
+  <script src="./test-runner.js"></script>
+  <script>
+    let currentResults = [];
+    let activeFilter = 'ALL';
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+    }
+
+    function setFilter(filter, el) {
+      activeFilter = filter;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      renderResults();
+    }
+
+    function renderResults() {
+      const container = document.getElementById('resultsContainer');
+      const filtered = currentResults.filter(r => {
+        if (activeFilter === 'ALL') return true;
+        if (activeFilter === 'FAIL_ONLY') return r.status === 'FAIL';
+        return r.tier.startsWith(activeFilter);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state">No test assertions match this filter.</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(r => `
+        <div class="result-row">
+          <div class="result-left">
+            <div class="result-message">${r.message}</div>
+            <div class="result-tier">${r.tier}</div>
+            ${r.details ? `<div class="result-details">${r.details}</div>` : ''}
+          </div>
+          <div class="badge ${r.status === 'PASS' ? 'badge-pass' : 'badge-fail'}">
+            ${r.status === 'PASS' ? '✓ PASS' : '✗ FAIL'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function executeTests() {
+      const runBtn = document.getElementById('runBtn');
+      runBtn.disabled = true;
+      runBtn.textContent = 'Running...';
+
+      try {
+        const summary = await window.runAllTests();
+        currentResults = summary.results;
+
+        document.getElementById('metricTotal').textContent = summary.total;
+        document.getElementById('metricPassed').textContent = summary.passed;
+        document.getElementById('metricFailed').textContent = summary.failed;
+        document.getElementById('metricDuration').textContent = summary.durationMs + ' ms';
+
+        renderResults();
+      } catch (err) {
+        console.error('Test execution error:', err);
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = '▶ Run All Tests';
+      }
+    }
+
+    // Auto-run on load
+    window.addEventListener('DOMContentLoaded', () => {
+      executeTests();
+    });
+  </script>
+</body>
+</html>
