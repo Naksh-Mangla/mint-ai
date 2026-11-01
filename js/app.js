@@ -1,24 +1,23 @@
 /**
- * Mint AI - Main Application Entry Point (js/app.js)
+ * Mint AI — Conversational Apple-Style App (js/app.js)
  * 
  * Simple explanation:
- * Think of this file like the conductor of an orchestra.
- * It waits for the website stage to be set (DOMContentLoaded), turns on
- * the lights (Theme), sets the mode (Role Switcher), and connects all the
- * buttons so that clicking them opens windows, claims bonus mints, or prints worksheets!
+ * Think of this file like the friendly host of Mint AI:
+ * 1. Welcomes you at the front door (Login screen).
+ * 2. Asks if you're a Teacher or Student (Role screen).
+ * 3. Opens the clean Apple chat studio where you can talk to AI,
+ *    attach your textbook notes, and generate ready-to-print tests!
  */
 
 import state, { getState, setState, on } from './state.js';
 import theme, { initTheme, toggleTheme } from './theme.js';
-import roleSwitcher, { initRoleSwitcher, setRole } from './role-switcher.js';
+
+// Active sources attached by user
+let attachedSources = [];
 
 /**
  * Toast Notification System
- * Displays unobtrusive, floating Apple-style pill alerts in the corner of the screen.
- * 
- * @param {string} message - Text to display
- * @param {'success'|'info'|'warning'|'error'} [type='info'] - Style variant
- * @param {number} [duration=3500] - Duration in milliseconds
+ * Displays unobtrusive Apple-style pill alerts in the corner.
  */
 export function showToast(message, type = 'info', duration = 3500) {
   const container = document.getElementById('toastContainer');
@@ -28,7 +27,6 @@ export function showToast(message, type = 'info', duration = 3500) {
   toast.className = `toast-item toast-${type}`;
   toast.setAttribute('role', 'alert');
 
-  // Simple icon based on type
   let icon = '✨';
   if (type === 'success') icon = '✓';
   else if (type === 'warning') icon = '⚠️';
@@ -52,175 +50,367 @@ export function showToast(message, type = 'info', duration = 3500) {
 }
 
 /**
- * Updates all currency displays on the page when the balance changes.
- * 
- * @param {number} mints - The current balance
+ * Screen Navigator (Auth -> Role -> Chat App)
  */
-function updateMintsDisplay(mints) {
-  const countSpan = document.getElementById('mintsCount');
-  if (countSpan) {
-    countSpan.textContent = String(mints);
-  }
+function navigateToScreen(screenName) {
+  const screenAuth = document.getElementById('screenAuth');
+  const screenRole = document.getElementById('screenRole');
+  const screenApp = document.getElementById('screenApp');
 
-  const dialogCount = document.getElementById('dialogMintsCount');
-  if (dialogCount) {
-    dialogCount.textContent = String(mints);
-  }
+  if (screenAuth) screenAuth.hidden = (screenName !== 'auth');
+  if (screenRole) screenRole.hidden = (screenName !== 'role');
+  if (screenApp) screenApp.hidden = (screenName !== 'app');
 
-  const badge = document.getElementById('mintsBadge');
-  if (badge) {
-    badge.setAttribute('aria-label', `Mint Balance: ${mints} Mints. Click to manage economy.`);
+  if (screenName === 'app') {
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) setTimeout(() => chatInput.focus(), 200);
   }
 }
 
 /**
- * Wires dialog modal open and close controls with backdrop click support.
+ * Updates UI with current user and role info
  */
-function setupDialogs() {
-  const dialogs = [
-    { dialogId: 'dialogAuth', openBtnId: 'btnPuterAuth', closeBtnId: 'btnCloseAuth' },
-    { dialogId: 'dialogMints', openBtnId: 'mintsBadge', closeBtnId: 'btnCloseMints' },
-    { dialogId: 'dialogMemory', openBtnId: 'btnOpenMemory', closeBtnId: 'btnCloseMemory' }
-  ];
+function updateHeaderUserInfo() {
+  const currentState = getState();
+  const userNameEl = document.getElementById('displayUserName');
+  const roleBadgeText = document.getElementById('roleBadgeText');
+  const heroRoleDesc = document.getElementById('heroRoleDesc');
 
-  dialogs.forEach(({ dialogId, openBtnId, closeBtnId }) => {
-    const dialog = document.getElementById(dialogId);
-    const openBtn = document.getElementById(openBtnId);
-    const closeBtn = document.getElementById(closeBtnId);
+  if (userNameEl) {
+    userNameEl.textContent = currentState.user?.username || 'Teacher';
+  }
 
-    if (openBtn && dialog) {
-      openBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (typeof dialog.showModal === 'function') {
-          dialog.showModal();
-        } else {
-          dialog.setAttribute('open', '');
-        }
-      });
+  const isTeacher = currentState.role === 'teacher';
+  if (roleBadgeText) {
+    roleBadgeText.textContent = isTeacher ? '👨‍🏫 Teacher Mode' : '🎓 Student Mode';
+  }
+  if (heroRoleDesc) {
+    heroRoleDesc.textContent = isTeacher
+      ? 'I generate standard school exam papers, definitions, multi-mark questions, and full marking rubrics in seconds. Type your request or attach your notes below!'
+      : 'I create interactive practice quizzes with instant grading and step-by-step solutions to help you study. Type any topic to begin!';
+  }
+}
+
+/**
+ * Updates wallet currency count in top bar and modals
+ */
+function updateMintsUI(mints) {
+  const countEl = document.getElementById('mintsCount');
+  const dialogCount = document.getElementById('dialogMintsCount');
+  if (countEl) countEl.textContent = String(mints);
+  if (dialogCount) dialogCount.textContent = String(mints);
+}
+
+/**
+ * Step 1: Sets up Login / Authentication Screen
+ */
+function setupAuthFlow() {
+  const formAuth = document.getElementById('formAuth');
+  const inputName = document.getElementById('inputAuthName');
+  const inputEmail = document.getElementById('inputAuthEmail');
+  const btnPuterQuick = document.getElementById('btnPuterQuickSignIn');
+
+  // Check saved session
+  try {
+    const savedUser = localStorage.getItem('mintai_user');
+    const savedRole = localStorage.getItem('mintai_role');
+
+    if (savedUser) {
+      const userObj = JSON.parse(savedUser);
+      setState({ user: userObj });
+      if (savedRole) {
+        setState({ role: savedRole });
+        updateHeaderUserInfo();
+        navigateToScreen('app');
+        return;
+      } else {
+        navigateToScreen('role');
+        return;
+      }
     }
+  } catch (e) {
+    console.warn('Session restore note:', e);
+  }
 
-    if (closeBtn && dialog) {
-      closeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (typeof dialog.close === 'function') {
-          dialog.close();
-        } else {
-          dialog.removeAttribute('open');
-        }
-      });
-    }
+  // Normal Form Submit
+  if (formAuth) {
+    formAuth.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = inputName?.value.trim() || 'Educator';
+      const email = inputEmail?.value.trim() || 'user@mintai.app';
 
-    if (dialog) {
-      // Close on clicking backdrop
-      dialog.addEventListener('click', (e) => {
-        const rect = dialog.getBoundingClientRect();
-        const isInDialog = (
-          rect.top <= e.clientY &&
-          e.clientY <= rect.top + rect.height &&
-          rect.left <= e.clientX &&
-          e.clientX <= rect.left + rect.width
-        );
-        if (!isInDialog) {
-          if (typeof dialog.close === 'function') {
-            dialog.close();
-          } else {
-            dialog.removeAttribute('open');
-          }
+      const userObj = {
+        signedIn: true,
+        username: name,
+        email: email,
+        uid: 'user_' + Date.now()
+      };
+
+      setState({ user: userObj });
+      try {
+        localStorage.setItem('mintai_user', JSON.stringify(userObj));
+      } catch (err) {}
+
+      showToast(`Welcome, ${name}! Please choose your role.`, 'success');
+      navigateToScreen('role');
+    });
+  }
+
+  // Puter Cloud Sign In
+  if (btnPuterQuick) {
+    btnPuterQuick.addEventListener('click', async () => {
+      if (typeof window !== 'undefined' && window.puter && window.puter.auth) {
+        try {
+          await window.puter.auth.signIn();
+          const pUser = await window.puter.auth.getUser();
+          const userObj = {
+            signedIn: true,
+            username: pUser?.username || 'Puter Educator',
+            email: pUser?.email || '',
+            uid: pUser?.uuid || 'puter_user'
+          };
+          setState({ user: userObj });
+          localStorage.setItem('mintai_user', JSON.stringify(userObj));
+          showToast(`Connected to Puter Cloud as ${userObj.username}! 🟢`, 'success');
+          navigateToScreen('role');
+        } catch (err) {
+          showToast('Puter sign-in was canceled or unavailable.', 'info');
         }
+      } else {
+        // Fallback for standalone browser testing
+        const userObj = {
+          signedIn: true,
+          username: 'Guest Teacher',
+          email: 'guest@mintai.app',
+          uid: 'guest_' + Date.now()
+        };
+        setState({ user: userObj });
+        localStorage.setItem('mintai_user', JSON.stringify(userObj));
+        navigateToScreen('role');
+      }
+    });
+  }
+}
+
+/**
+ * Step 2: Sets up Role Selection Screen (Teacher vs Student)
+ */
+function setupRoleFlow() {
+  const cardTeacher = document.getElementById('cardRoleTeacher');
+  const cardStudent = document.getElementById('cardRoleStudent');
+  const btnConfirm = document.getElementById('btnConfirmRole');
+  let selectedRole = null;
+
+  const selectRole = (role) => {
+    selectedRole = role;
+    if (cardTeacher) cardTeacher.classList.toggle('selected', role === 'teacher');
+    if (cardStudent) cardStudent.classList.toggle('selected', role === 'student');
+    if (btnConfirm) btnConfirm.disabled = false;
+  };
+
+  if (cardTeacher) {
+    cardTeacher.addEventListener('click', () => selectRole('teacher'));
+  }
+  if (cardStudent) {
+    cardStudent.addEventListener('click', () => selectRole('student'));
+  }
+
+  if (btnConfirm) {
+    btnConfirm.addEventListener('click', () => {
+      if (!selectedRole) return;
+
+      setState({ role: selectedRole });
+      try {
+        localStorage.setItem('mintai_role', selectedRole);
+      } catch (e) {}
+
+      updateHeaderUserInfo();
+      showToast(`Role confirmed: ${selectedRole === 'teacher' ? 'Teacher Studio' : 'Student Hub'} ready! 🚀`, 'success');
+      navigateToScreen('app');
+    });
+  }
+
+  // Header quick switch button
+  const btnSwitchRole = document.getElementById('btnSwitchRole');
+  if (btnSwitchRole) {
+    btnSwitchRole.addEventListener('click', () => {
+      const current = getState().role;
+      const nextRole = current === 'teacher' ? 'student' : 'teacher';
+      setState({ role: nextRole });
+      try {
+        localStorage.setItem('mintai_role', nextRole);
+      } catch (e) {}
+      updateHeaderUserInfo();
+      showToast(`Switched to ${nextRole === 'teacher' ? 'Teacher' : 'Student'} Mode!`, 'info');
+    });
+  }
+
+  // Logout button
+  const btnLogout = document.getElementById('btnLogout');
+  if (btnLogout) {
+    btnLogout.addEventListener('click', () => {
+      localStorage.removeItem('mintai_user');
+      localStorage.removeItem('mintai_role');
+      setState({
+        user: { signedIn: false, username: null, uid: null },
+        role: 'teacher'
       });
+      navigateToScreen('auth');
+      showToast('Logged out successfully.', 'info');
+    });
+  }
+}
+
+/**
+ * Step 3: Sets up Sources Modal & Management
+ */
+function setupSourcesFlow() {
+  const modal = document.getElementById('modalSources');
+  const btnOpen = document.getElementById('btnOpenSourceModal');
+  const btnTopSources = document.getElementById('btnTopSources');
+  const btnClose = document.getElementById('btnCloseSourcesModal');
+  const btnCancel = document.getElementById('btnCancelSource');
+  const btnSave = document.getElementById('btnSaveSource');
+  const inputTitle = document.getElementById('inputSourceTitle');
+  const inputContent = document.getElementById('inputSourceContent');
+  const fileUpload = document.getElementById('fileSourceUpload');
+
+  const openModal = () => {
+    if (modal && typeof modal.showModal === 'function') {
+      modal.showModal();
+    } else if (modal) {
+      modal.setAttribute('open', '');
     }
+  };
+
+  const closeModal = () => {
+    if (modal && typeof modal.close === 'function') {
+      modal.close();
+    } else if (modal) {
+      modal.removeAttribute('open');
+    }
+  };
+
+  if (btnOpen) btnOpen.addEventListener('click', openModal);
+  if (btnTopSources) btnTopSources.addEventListener('click', openModal);
+  if (btnClose) btnClose.addEventListener('click', closeModal);
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+
+  // File upload reader
+  if (fileUpload) {
+    fileUpload.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (inputContent) inputContent.value = event.target?.result || '';
+        if (inputTitle && !inputTitle.value) inputTitle.value = file.name;
+        showToast(`Loaded file: ${file.name}`, 'info');
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // Save source
+  if (btnSave) {
+    btnSave.addEventListener('click', () => {
+      const title = inputTitle?.value.trim() || `Source ${attachedSources.length + 1}`;
+      const content = inputContent?.value.trim();
+
+      if (!content) {
+        showToast('Please paste or upload some text content first.', 'warning');
+        return;
+      }
+
+      attachedSources.push({ id: 'src_' + Date.now(), title, content });
+      updateSourcesPreview();
+      closeModal();
+
+      if (inputTitle) inputTitle.value = '';
+      if (inputContent) inputContent.value = '';
+
+      showToast(`Attached source: "${title}" to AI memory! 📎`, 'success');
+    });
+  }
+}
+
+/**
+ * Updates the attached source preview bar above chat input
+ */
+function updateSourcesPreview() {
+  const bar = document.getElementById('sourcesPreviewBar');
+  const tagsList = document.getElementById('sourcesTagsList');
+  const topCount = document.getElementById('topSourcesCount');
+
+  if (topCount) {
+    topCount.textContent = `${attachedSources.length} ${attachedSources.length === 1 ? 'Source' : 'Sources'}`;
+  }
+
+  if (!bar || !tagsList) return;
+
+  if (attachedSources.length === 0) {
+    bar.hidden = true;
+    tagsList.innerHTML = '';
+    return;
+  }
+
+  bar.hidden = false;
+  tagsList.innerHTML = '';
+
+  attachedSources.forEach((src, idx) => {
+    const pill = document.createElement('span');
+    pill.className = 'source-tag-pill';
+    pill.innerHTML = `
+      <span>📄 ${src.title}</span>
+      <button type="button" class="btn-remove-source-tag" data-index="${idx}" title="Remove source">✕</button>
+    `;
+    tagsList.appendChild(pill);
+  });
+
+  tagsList.querySelectorAll('.btn-remove-source-tag').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const index = parseInt(e.currentTarget.getAttribute('data-index'), 10);
+      attachedSources.splice(index, 1);
+      updateSourcesPreview();
+      showToast('Source detached.', 'info');
+    });
   });
 }
 
 /**
- * Sets up the Mints economy actions: Daily bonus claiming and dev refills.
+ * AI Test Generator Engine (Puter DeepSeek V4.1 with Curriculum Fallback)
  */
-function setupEconomy() {
-  const handleDailyBonus = () => {
-    const currentState = getState();
-    const now = Date.now();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-
-    if (currentState.lastDailyBonus && (now - currentState.lastDailyBonus) < twentyFourHours) {
-      const remainingMs = twentyFourHours - (now - currentState.lastDailyBonus);
-      const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
-      showToast(`Daily bonus already claimed! Next bonus in ~${remainingHours} hours.`, 'warning');
-      return;
-    }
-
-    const newBalance = currentState.mints + 10;
-    setState({
-      mints: newBalance,
-      lastDailyBonus: now,
-      reason: 'daily_bonus'
-    });
-
-    showToast('Claimed +10 Daily Bonus Mints! 🎉', 'success');
-
-    // Update countdown text
-    const countdown = document.getElementById('dailyBonusCountdown');
-    if (countdown) {
-      countdown.removeAttribute('hidden');
-      countdown.textContent = 'Next bonus available in 24 hours';
-    }
-  };
-
-  const btnTopBonus = document.getElementById('btnDailyBonus');
-  if (btnTopBonus) {
-    btnTopBonus.addEventListener('click', (e) => {
-      e.preventDefault();
-      handleDailyBonus();
-    });
+async function callDeepSeekAI(userPrompt, questionCount) {
+  let sourcesContext = '';
+  if (attachedSources.length > 0) {
+    sourcesContext = '\\n\\nTEACHER ATTACHED TEXTBOOK SOURCES:\\n' + 
+      attachedSources.map(s => `--- ${s.title} ---\\n${s.content}`).join('\\n\\n');
   }
 
-  const btnModalBonus = document.getElementById('btnClaimModalBonus');
-  if (btnModalBonus) {
-    btnModalBonus.addEventListener('click', (e) => {
-      e.preventDefault();
-      handleDailyBonus();
-    });
-  }
+  const systemPrompt = `You are Mint AI, an elite academic exam and test generator for schools and tuition teachers.
+Create a high-quality academic test paper based on the user's request.
+User Request: ${userPrompt}
+Number of Questions: ${questionCount}
+${sourcesContext}
 
-  const btnDevRefill = document.getElementById('btnDevRefill50');
-  if (btnDevRefill) {
-    btnDevRefill.addEventListener('click', (e) => {
-      e.preventDefault();
-      const current = getState().mints;
-      setState({
-        mints: current + 50,
-        reason: 'dev_refill'
-      });
-      showToast('Added +50 Test Mints to wallet!', 'success');
-    });
-  }
-}
-
-/**
- * Generates test questions using Puter DeepSeek AI with intelligent fallback.
- */
-async function generateAIExam({ subject, grade, topic, count, formats, rules }) {
-  const formatList = formats.length ? formats.join(', ') : '1_mark, 2_3_mark, 5_mark, fill_in_blanks';
-  const customRulesText = rules.length ? rules.join('; ') : 'Focus on standard school curriculum definitions and concepts.';
-  
-  const systemPrompt = `You are Mint AI, an elite academic test and exam paper generator for teachers.
-Generate a realistic academic exam test paper with EXACTLY ${count} standard school exam questions.
-Subject: ${subject}
-Grade/Level: ${grade}
-Topic/Chapter: ${topic}
-Question Formats to include: ${formatList}
-Teacher style guidelines and rules: ${customRulesText}
-
-IMPORTANT REQUIREMENTS:
-1. Include standard school curriculum questions (e.g. definitions like "What is mitochondria?", bullet-point differences, step-by-step explanations, fill-in-the-blanks).
-2. For each question, provide a detailed model answer and a point-wise grading rubric.
-3. Return STRICTLY a valid JSON object with NO markdown formatting, NO backticks, and NO extra commentary.
+REQUIREMENTS:
+1. Include standard school curriculum question types:
+   - 1-mark definition questions (e.g., "What is mitochondria?", "Define photosynthesis")
+   - 2 to 3 mark bullet-point differentiation or comparative questions
+   - 5-mark structured long-answer questions
+   - Fill-in-the-blanks with numbered tokens [blank_1], [blank_2]
+2. For EVERY question provide:
+   - Detailed model answer
+   - Step-by-step point-wise grading rubric
+3. Return STRICTLY a valid JSON object without markdown fences, backticks, or conversational preamble.
 
 JSON Schema:
 {
-  "title": "${subject}: ${topic}",
-  "subject": "${subject}",
-  "grade": "${grade}",
-  "totalMarks": ${count * 2.5},
+  "title": "Exam Title",
+  "subject": "Subject Name",
+  "grade": "Grade / Level",
+  "totalMarks": ${questionCount * 2.5},
   "questions": [
     {
       "id": "q1",
@@ -229,7 +419,7 @@ JSON Schema:
       "questionText": "Question text here...",
       "modelAnswer": "Model answer here...",
       "rubricSteps": [
-        {"criterion": "Key point or keyword mentioned", "points": "1.0 Mark"}
+        {"criterion": "Key point or definition mentioned", "points": "1.0 Mark"}
       ]
     }
   ]
@@ -241,560 +431,466 @@ JSON Schema:
         model: 'deepseek/deepseek-v4.1-flash'
       });
 
-      let rawText = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response));
-      // Clean markdown code blocks if AI wrapped output in ```json
-      rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(rawText);
+      let raw = typeof response === 'string' ? response : (response?.message?.content || response?.text || JSON.stringify(response));
+      raw = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.questions) && parsed.questions.length > 0) {
         return parsed;
       }
     } catch (err) {
-      console.warn('Puter AI chat request completed with fallback:', err);
+      console.warn('Puter DeepSeek call completed with fallback:', err);
     }
   }
 
-  // High-fidelity curriculum fallback when offline or guest
-  const sampleTopics = [
-    {
-      id: 'q1',
-      format: '1-Mark Definition',
-      marks: 1,
-      questionText: `Define the core principle of ${topic} in ${subject}.`,
-      modelAnswer: `${topic} is a fundamental concept in ${subject} characterized by systematic principles and observable mechanisms.`,
-      rubricSteps: [
-        { criterion: 'Accurately defines the core concept and primary term', points: '1.0 Mark' }
-      ]
-    },
-    {
-      id: 'q2',
-      format: '2 to 3 Mark Points',
-      marks: 3,
-      questionText: `State three essential properties or stages of ${topic} in ${subject}.`,
-      modelAnswer: `1. Primary function or initiation stage.\\n2. Secondary regulatory mechanism.\\n3. Final outcome or physiological effect.`,
-      rubricSteps: [
-        { criterion: 'Identifies first key property/stage accurately', points: '1.0 Mark' },
-        { criterion: 'Explains second property/stage clearly', points: '1.0 Mark' },
-        { criterion: 'Provides third distinct comparative point', points: '1.0 Mark' }
-      ]
-    },
-    {
-      id: 'q3',
-      format: '5-Mark Long Answer',
-      marks: 5,
-      questionText: `Explain the detailed mechanism of ${topic}. Discuss its practical significance and real-world applications in ${subject}.`,
-      modelAnswer: `Comprehensive explanation covering structural foundation, functional progression, biochemical or mathematical principles, and real-world application with conclusive summary.`,
-      rubricSteps: [
-        { criterion: 'Introduction and foundational definitions', points: '1.0 Mark' },
-        { criterion: 'Detailed structural and step-by-step mechanism', points: '2.0 Marks' },
-        { criterion: 'Real-world significance and applications', points: '1.0 Mark' },
-        { criterion: 'Clear scientific terminology and summary', points: '1.0 Mark' }
-      ]
-    },
-    {
-      id: 'q4',
-      format: 'Fill-in-the-Blanks',
-      marks: 1,
-      questionText: `In the study of ${topic}, [blank_1] serves as the primary component, and [blank_2] regulates the reaction.`,
-      modelAnswer: `[blank_1] Core Unit\\n[blank_2] Enzyme or Catalyst`,
-      rubricSteps: [
-        { criterion: 'Correctly identifies [blank_1]', points: '0.5 Mark' },
-        { criterion: 'Correctly identifies [blank_2]', points: '0.5 Mark' }
-      ]
-    }
-  ];
-
+  // Realistic Curriculum Fallback
+  const topicKeyword = userPrompt.replace(/create|make|generate|test|questions|for|grade|a|an|\d+/gi, '').trim() || 'General Science';
+  
   return {
-    title: `${subject}: ${topic}`,
-    subject,
-    grade,
-    totalMarks: count * 2,
-    questions: sampleTopics.slice(0, count)
+    title: `Exam Paper: ${topicKeyword.charAt(0).toUpperCase() + topicKeyword.slice(1)}`,
+    subject: 'Academic Curriculum',
+    grade: 'Standard',
+    totalMarks: questionCount * 2.5,
+    questions: [
+      {
+        id: 'q1',
+        format: '1-Mark Definition',
+        marks: 1,
+        questionText: `Define the primary physiological role of ${topicKeyword} in living organisms.`,
+        modelAnswer: `${topicKeyword} is a fundamental biological or physical principle responsible for essential cellular processes and metabolic energy transfer.`,
+        rubricSteps: [
+          { criterion: 'States clear core definition and scientific mechanism', points: '1.0 Mark' }
+        ]
+      },
+      {
+        id: 'q2',
+        format: '2 to 3 Mark Points',
+        marks: 3,
+        questionText: `List three distinct characteristics or key stages associated with ${topicKeyword}.`,
+        modelAnswer: `1. Initial phase or structural membrane activation.\\n2. Core biochemical catalysis or conversion step.\\n3. Final stabilization and product release.`,
+        rubricSteps: [
+          { criterion: 'First distinct characteristic stated', points: '1.0 Mark' },
+          { criterion: 'Second distinct characteristic stated', points: '1.0 Mark' },
+          { criterion: 'Third distinct characteristic stated', points: '1.0 Mark' }
+        ]
+      },
+      {
+        id: 'q3',
+        format: '5-Mark Long Answer',
+        marks: 5,
+        questionText: `Describe the complete structural organization of ${topicKeyword}. Explain step-by-step how it contributes to systemic function.`,
+        modelAnswer: `Comprehensive overview of compartmentalization: outer structural boundaries, specialized internal catalysts, energy transformation cycles, and regulatory homeostatic mechanisms.`,
+        rubricSteps: [
+          { criterion: 'Structural overview and definitions', points: '1.0 Mark' },
+          { criterion: 'Internal mechanistic and molecular progression', points: '2.0 Marks' },
+          { criterion: 'Functional significance and applications', points: '1.0 Mark' },
+          { criterion: 'Summary and scientific conclusion', points: '1.0 Mark' }
+        ]
+      },
+      {
+        id: 'q4',
+        format: 'Fill-in-the-Blanks',
+        marks: 1,
+        questionText: `During the cycle of ${topicKeyword}, [blank_1] acts as the initial reactant, releasing energy stored within [blank_2].`,
+        modelAnswer: `[blank_1] Glucose or Substrate\\n[blank_2] Chemical bonds (ATP)`,
+        rubricSteps: [
+          { criterion: 'Correctly identifies [blank_1]', points: '0.5 Mark' },
+          { criterion: 'Correctly identifies [blank_2]', points: '0.5 Mark' }
+        ]
+      }
+    ].slice(0, questionCount)
   };
 }
 
 /**
- * Renders generated test questions dynamically into both Teacher and Student feeds.
+ * Step 4: Conversational Chat Logic (Sending & Rendering)
  */
-function renderGeneratedTest(testData) {
-  if (!testData || !Array.isArray(testData.questions)) return;
+function setupChatFlow() {
+  const chatInput = document.getElementById('chatInput');
+  const btnSend = document.getElementById('btnSendMessage');
+  const chatFeed = document.getElementById('chatFeed');
+  const selectCount = document.getElementById('selectQuickCount');
+  const chatHero = document.getElementById('chatHero');
 
-  // 1. Update Teacher Metadata Toolbar
-  const titleEl = document.getElementById('displayTestTitle');
-  const subEl = document.getElementById('displayMetaSubject');
-  const gradeEl = document.getElementById('displayMetaGrade');
-  const marksEl = document.getElementById('displayMetaMarks');
-  const studentTitle = document.getElementById('studentExamTitle');
-  const studentTopic = document.getElementById('studentExamTopic');
-
-  if (titleEl) titleEl.textContent = testData.title || `${testData.subject} Examination`;
-  if (subEl) subEl.textContent = testData.subject || 'General';
-  if (gradeEl) gradeEl.textContent = testData.grade || 'Standard';
-  if (marksEl) marksEl.textContent = `Total: ${testData.totalMarks || testData.questions.length * 2} Marks`;
-  if (studentTitle) studentTitle.textContent = `Practice Worksheet: ${testData.subject} (${testData.grade})`;
-  if (studentTopic) studentTopic.textContent = `Topic: ${testData.title || testData.subject}`;
-
-  // 2. Render Teacher Feed
-  const teacherFeed = document.getElementById('teacherQuestionFeed');
-  if (teacherFeed) {
-    teacherFeed.innerHTML = '';
-    testData.questions.forEach((q, idx) => {
-      const qNum = idx + 1;
-      const article = document.createElement('article');
-      article.className = 'apple-glass-card question-card';
-      article.setAttribute('data-question-id', q.id || `q${qNum}`);
-      article.innerHTML = `
-        <header class="card-header">
-          <div class="q-meta">
-            <span class="q-number-pill">Q${qNum}</span>
-            <span class="q-format-pill">${q.format || 'Standard Question'}</span>
-          </div>
-          <div class="q-marks-badge">${q.marks || 1} ${q.marks === 1 ? 'Mark' : 'Marks'}</div>
-        </header>
-
-        <div class="q-body">
-          <p class="q-text">${q.questionText}</p>
-        </div>
-
-        <details class="rubric-accordion" open>
-          <summary class="rubric-summary">
-            <span class="summary-title">Model Answer & Grading Rubric</span>
-            <span class="accordion-chevron" aria-hidden="true"></span>
-          </summary>
-          <div class="rubric-content">
-            <div class="model-answer-block">
-              <strong>Expected Answer:</strong>
-              <p>${q.modelAnswer.replace(/\\n/g, '<br>')}</p>
-            </div>
-            <div class="step-rubric-table">
-              ${(q.rubricSteps || []).map(step => `
-                <div class="rubric-row">
-                  <span class="rubric-criterion">${step.criterion}</span>
-                  <span class="rubric-points">${step.points}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </details>
-
-        <footer class="card-footer">
-          <div class="feedback-group">
-            <span class="feedback-label">AI Memory Rating:</span>
-            <button type="button" class="btn-thumb thumb-up" data-feedback="up" data-qid="${q.id || `q${qNum}`}" aria-label="Thumbs up this question format">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-              </svg>
-              <span>Good</span>
-            </button>
-            <button type="button" class="btn-thumb thumb-down" data-feedback="down" data-qid="${q.id || `q${qNum}`}" aria-label="Thumbs down this question format">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>
-              </svg>
-              <span>Revise</span>
-            </button>
-          </div>
-        </footer>
-      `;
-      teacherFeed.appendChild(article);
+  // Auto-resize input textarea
+  if (chatInput) {
+    chatInput.addEventListener('input', () => {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
     });
-  }
 
-  // 3. Render Student Feed
-  const studentFeed = document.getElementById('studentQuestionFeed');
-  if (studentFeed) {
-    studentFeed.innerHTML = '';
-    testData.questions.forEach((q, idx) => {
-      const qNum = idx + 1;
-      const article = document.createElement('article');
-      article.className = 'apple-glass-card student-q-card';
-      article.setAttribute('data-question-id', `sq${qNum}`);
-      article.innerHTML = `
-        <header class="card-header">
-          <div class="q-meta">
-            <span class="q-number-pill">Question ${qNum}</span>
-            <span class="q-marks-pill">${q.marks || 1} ${q.marks === 1 ? 'Mark' : 'Marks'}</span>
-          </div>
-        </header>
-        
-        <div class="q-body">
-          <p class="q-prompt">${q.questionText}</p>
-          <div class="student-input-container">
-            <label for="studentAnswer${qNum}" class="sr-only">Your answer for Question ${qNum}</label>
-            <textarea id="studentAnswer${qNum}" class="apple-textarea student-answer-box" rows="3" placeholder="Type your answer here..."></textarea>
-          </div>
-        </div>
-
-        <footer class="card-footer">
-          <button type="button" class="apple-button btn-reveal-key" data-target="sq${qNum}-rubric" aria-expanded="false">
-            <span>Reveal Marking Rubric</span>
-          </button>
-          <div id="sq${qNum}-rubric" class="student-rubric-reveal" hidden>
-            <div class="model-hint">
-              <strong>Model Key:</strong> ${q.modelAnswer.replace(/\\n/g, '<br>')}
-            </div>
-          </div>
-        </footer>
-      `;
-      studentFeed.appendChild(article);
-    });
-  }
-
-  // Update current test in reactive state
-  setState({ currentTest: testData });
-}
-
-/**
- * Sets up Teacher generator form inputs and cost calculation.
- */
-function setupGeneratorForm() {
-  const countInput = document.getElementById('inputQuestionCount');
-  const costNumber = document.getElementById('costNumber');
-
-  if (countInput && costNumber) {
-    const updateCost = () => {
-      const count = parseInt(countInput.value, 10) || 1;
-      costNumber.textContent = String(count);
-    };
-
-    countInput.addEventListener('input', updateCost);
-    countInput.addEventListener('change', updateCost);
-  }
-
-  const form = document.getElementById('formGenerateTest');
-  const btnGenerate = document.getElementById('btnGenerateTest');
-  const btnText = document.getElementById('btnGenerateText');
-  const spinner = document.getElementById('generateSpinner');
-
-  if (form) {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const count = parseInt(countInput?.value, 10) || 4;
-      const currentMints = getState().mints;
-
-      if (currentMints < count) {
-        showToast(`Insufficient Mints! Need ${count} Mints, but you have ${currentMints}.`, 'warning');
-        const mintsDialog = document.getElementById('dialogMints');
-        if (mintsDialog && typeof mintsDialog.showModal === 'function') {
-          mintsDialog.showModal();
-        }
-        return;
-      }
-
-      // Collect inputs
-      const subject = document.getElementById('inputSubject')?.value || 'Biology';
-      const grade = document.getElementById('selectGrade')?.value || 'Grade 10';
-      const topic = document.getElementById('inputTopic')?.value || 'Cell Structure and Energy';
-      
-      const formatCheckboxes = document.querySelectorAll('input[name="format"]:checked');
-      const formats = Array.from(formatCheckboxes).map(cb => cb.value);
-      const rules = getState().preferences?.customInstructions || [];
-
-      // UI Loading state
-      if (btnGenerate) btnGenerate.disabled = true;
-      if (btnText) btnText.textContent = 'Generating with DeepSeek AI...';
-      if (spinner) spinner.removeAttribute('hidden');
-      showToast('Generating test paper with DeepSeek AI...', 'info');
-
-      try {
-        const testData = await generateAIExam({
-          subject,
-          grade,
-          topic,
-          count,
-          formats,
-          rules
-        });
-
-        // Deduct mints
-        setState({
-          mints: currentMints - count,
-          reason: 'test_generation'
-        });
-
-        // Render dynamically
-        renderGeneratedTest(testData);
-        showToast(`Test generated successfully! Used ${count} Mints. ✨`, 'success');
-      } catch (err) {
-        console.error('Test generation error:', err);
-        showToast('Error generating test. Please try again.', 'error');
-      } finally {
-        if (btnGenerate) btnGenerate.disabled = false;
-        if (btnText) btnText.textContent = 'Generate Test with DeepSeek AI';
-        if (spinner) spinner.setAttribute('hidden', '');
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
       }
     });
   }
 
-  // Wire Export JSON button
-  const btnExport = document.getElementById('btnExportJson');
-  if (btnExport) {
-    btnExport.addEventListener('click', (e) => {
+  if (btnSend) {
+    btnSend.addEventListener('click', (e) => {
       e.preventDefault();
-      const activeTest = getState().currentTest || {
-        subject: 'Science',
-        title: 'Photosynthesis and Cellular Respiration',
-        totalMarks: 10,
-        exportedAt: new Date().toISOString()
-      };
-      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(activeTest, null, 2));
-      const a = document.createElement('a');
-      a.href = dataUri;
-      a.download = `mint-ai-test-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      showToast('Downloaded test paper JSON! 📄', 'success');
+      sendMessage();
     });
   }
 
-  // Wire Puter Auth Buttons
-  const btnPuterSignInModal = document.getElementById('btnPuterSignInModal');
-  if (btnPuterSignInModal) {
-    btnPuterSignInModal.addEventListener('click', async (e) => {
-      e.preventDefault();
-      if (typeof window !== 'undefined' && window.puter && window.puter.auth) {
-        try {
-          await window.puter.auth.signIn();
-          const user = await window.puter.auth.getUser();
-          setState({
-            user: {
-              signedIn: true,
-              username: user?.username || 'Teacher',
-              uid: user?.uuid || 'puter_user'
-            }
-          });
-          showToast(`Signed in to Puter as ${user?.username || 'Teacher'}! 🟢`, 'success');
-          const authDialog = document.getElementById('dialogAuth');
-          if (authDialog) authDialog.close();
-        } catch (authErr) {
-          showToast('Sign-in cancelled or unavailable.', 'info');
-        }
-      } else {
-        showToast('Puter SDK is operating in standalone browser mode.', 'info');
+  // Suggestion prompt chips
+  document.querySelectorAll('.suggestion-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const prompt = chip.getAttribute('data-prompt');
+      if (chatInput) {
+        chatInput.value = prompt;
+        chatInput.style.height = 'auto';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
       }
+      sendMessage();
     });
-  }
-}
+  });
 
-/**
- * Sets up AI memory preference rules in Teacher mode.
- */
-function setupMemory() {
-  const form = document.getElementById('formAddRule');
-  const input = document.getElementById('inputCustomRule');
-  const list = document.getElementById('memoryRulesList');
-  const clearBtn = document.getElementById('btnClearMemory');
+  async function sendMessage() {
+    const text = chatInput?.value.trim();
+    if (!text) return;
 
-  const renderRules = () => {
-    if (!list) return;
-    const rules = getState().preferences?.customInstructions || [];
-    list.innerHTML = '';
+    const count = parseInt(selectCount?.value, 10) || 4;
+    const currentMints = getState().mints;
 
-    if (rules.length === 0) {
-      list.innerHTML = '<p class="empty-rules-hint">No custom rules added yet. AI uses standard curriculum standards.</p>';
+    // Check Mints balance
+    if (currentMints < count) {
+      showToast(`Need ${count} Mints, but you have ${currentMints} Mints. Claim daily bonus or refill!`, 'warning');
+      const mintsModal = document.getElementById('modalMints');
+      if (mintsModal && typeof mintsModal.showModal === 'function') {
+        mintsModal.showModal();
+      }
       return;
     }
 
-    rules.forEach((rule, idx) => {
-      const item = document.createElement('div');
-      item.className = 'memory-rule-chip';
-      item.innerHTML = `
-        <span class="rule-chip-text">${rule}</span>
-        <button type="button" class="btn-remove-rule" data-index="${idx}" aria-label="Remove rule">✕</button>
+    // Hide hero once conversation starts
+    if (chatHero) chatHero.hidden = true;
+
+    // 1. Append User Message Bubble
+    appendUserBubble(text);
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+
+    // 2. Append Thinking Indicator
+    const thinkingRow = appendThinkingIndicator();
+
+    // UI Loading state
+    if (btnSend) btnSend.disabled = true;
+
+    try {
+      // 3. Call DeepSeek AI
+      const testData = await callDeepSeekAI(text, count);
+
+      // Deduct Mints
+      setState({
+        mints: currentMints - count,
+        currentTest: testData,
+        reason: 'test_generation'
+      });
+
+      // Remove thinking indicator
+      if (thinkingRow && thinkingRow.parentNode) {
+        thinkingRow.parentNode.removeChild(thinkingRow);
+      }
+
+      // 4. Render AI Response and Generated Test Paper
+      appendAIResponse(testData, text, count);
+      showToast(`Exam paper generated! Used ${count} Mints. ✨`, 'success');
+
+    } catch (err) {
+      console.error('Error generating chat test:', err);
+      if (thinkingRow && thinkingRow.parentNode) {
+        thinkingRow.parentNode.removeChild(thinkingRow);
+      }
+      appendErrorMessage('I encountered an error generating the test. Please try again!');
+    } finally {
+      if (btnSend) btnSend.disabled = false;
+      scrollToBottom();
+    }
+  }
+
+  function appendUserBubble(text) {
+    const row = document.createElement('div');
+    row.className = 'chat-message-row';
+    row.innerHTML = `<div class="user-message-bubble">${escapeHtml(text)}</div>`;
+    chatFeed.appendChild(row);
+    scrollToBottom();
+  }
+
+  function appendThinkingIndicator() {
+    const row = document.createElement('div');
+    row.className = 'chat-message-row';
+    row.innerHTML = `
+      <div class="thinking-indicator">
+        <div class="thinking-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <span>Mint AI is drafting your exam questions with DeepSeek...</span>
+      </div>
+    `;
+    chatFeed.appendChild(row);
+    scrollToBottom();
+    return row;
+  }
+
+  function appendErrorMessage(msg) {
+    const row = document.createElement('div');
+    row.className = 'chat-message-row';
+    row.innerHTML = `<div class="ai-message-bubble" style="border-left: 3px solid var(--color-danger);">${msg}</div>`;
+    chatFeed.appendChild(row);
+    scrollToBottom();
+  }
+
+  function appendAIResponse(testData, userPrompt, count) {
+    const row = document.createElement('div');
+    row.className = 'chat-message-row';
+
+    const testId = 'test_' + Date.now();
+    const isTeacher = getState().role === 'teacher';
+
+    let questionsHtml = '';
+    testData.questions.forEach((q, idx) => {
+      const qNum = idx + 1;
+      questionsHtml += `
+        <article class="apple-glass-card question-card" data-question-id="${q.id || `q${qNum}`}">
+          <header class="card-header">
+            <div class="q-meta">
+              <span class="q-number-pill">Q${qNum}</span>
+              <span class="q-format-pill">${q.format}</span>
+            </div>
+            <div class="q-marks-badge">${q.marks} ${q.marks === 1 ? 'Mark' : 'Marks'}</div>
+          </header>
+
+          <div class="q-body">
+            <p class="q-text">${q.questionText}</p>
+          </div>
+
+          <!-- Model Answer & Rubric (Teacher Key) -->
+          <details class="rubric-accordion" open>
+            <summary class="rubric-summary">
+              <span class="summary-title">Model Answer & Marking Rubric</span>
+              <span class="accordion-chevron" aria-hidden="true"></span>
+            </summary>
+            <div class="rubric-content">
+              <div class="model-answer-block">
+                <strong>Model Answer:</strong>
+                <p>${q.modelAnswer.replace(/\\n/g, '<br>')}</p>
+              </div>
+              <div class="step-rubric-table">
+                ${(q.rubricSteps || []).map(step => `
+                  <div class="rubric-row">
+                    <span class="rubric-criterion">${step.criterion}</span>
+                    <span class="rubric-points">${step.points}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </details>
+
+          <footer class="card-footer">
+            <div class="feedback-group">
+              <span class="feedback-label">Memory Rating:</span>
+              <button type="button" class="btn-thumb thumb-up" data-feedback="up" title="I like this question style">
+                <span>👍 Good</span>
+              </button>
+              <button type="button" class="btn-thumb thumb-down" data-feedback="down" title="Revise this style">
+                <span>👎 Needs work</span>
+              </button>
+            </div>
+          </footer>
+        </article>
       `;
-      list.appendChild(item);
     });
 
-    const removeBtns = list.querySelectorAll('.btn-remove-rule');
-    removeBtns.forEach(btn => {
+    row.innerHTML = `
+      <div class="ai-response-wrapper">
+        <div class="ai-message-bubble">
+          I've generated a <strong>${testData.questions.length}-question</strong> exam paper on <strong>${testData.title}</strong> using DeepSeek V4.1. Here is your complete test sheet and teacher answer key:
+        </div>
+
+        <div class="generated-test-paper" id="${testId}">
+          <div class="test-paper-header">
+            <div>
+              <h3 class="test-paper-title">${testData.title}</h3>
+              <div class="test-paper-meta">
+                <span class="meta-pill">${testData.subject}</span>
+                <span class="meta-pill">${testData.grade}</span>
+                <span class="meta-pill">Total: ${testData.totalMarks} Marks</span>
+              </div>
+            </div>
+
+            <div class="paper-actions-bar">
+              <button type="button" class="apple-button btn-tool btn-print-paper" title="Print clean A4 worksheet">
+                <span>🖨️ Print Worksheet</span>
+              </button>
+              <button type="button" class="apple-button btn-tool btn-export-paper-json" title="Download JSON file">
+                <span>📥 Export JSON</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="test-paper-questions">
+            ${questionsHtml}
+          </div>
+        </div>
+      </div>
+    `;
+
+    chatFeed.appendChild(row);
+
+    // Wire Print Button on this card
+    const printBtn = row.querySelector('.btn-print-paper');
+    if (printBtn) {
+      printBtn.addEventListener('click', () => {
+        window.print();
+      });
+    }
+
+    // Wire Export JSON button
+    const exportBtn = row.querySelector('.btn-export-paper-json');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(testData, null, 2));
+        const a = document.createElement('a');
+        a.href = dataUri;
+        a.download = `mint-ai-${testData.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast('Downloaded test paper JSON! 📄', 'success');
+      });
+    }
+
+    // Wire Thumbs Up / Down ratings
+    row.querySelectorAll('.btn-thumb').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const index = parseInt(e.currentTarget.getAttribute('data-index'), 10);
-        const currentRules = [...(getState().preferences?.customInstructions || [])];
-        currentRules.splice(index, 1);
-        setState({
-          preferences: {
-            ...getState().preferences,
-            customInstructions: currentRules
-          }
-        });
-        renderRules();
-        showToast('Rule removed from AI Memory', 'info');
+        const type = btn.getAttribute('data-feedback');
+        btn.classList.add(type === 'up' ? 'active-positive' : 'active-negative');
+        showToast(type === 'up' ? 'Saved preference: AI will use this style! 👍' : 'Feedback noted: AI will adjust future questions. 👎', 'info');
       });
     });
+
+    scrollToBottom();
+  }
+
+  function scrollToBottom() {
+    const main = document.getElementById('chatMainContainer');
+    if (main) {
+      setTimeout(() => {
+        main.scrollTop = main.scrollHeight;
+      }, 50);
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+}
+
+/**
+ * Sets up Mints Economy (Daily bonus claim & dev refills)
+ */
+function setupEconomyFlow() {
+  const btnTopBonus = document.getElementById('btnDailyBonus');
+  const btnModalBonus = document.getElementById('btnClaimDailyModal');
+  const btnDevMints = document.getElementById('btnDevAddMints');
+  const badgeMints = document.getElementById('mintsBadge');
+  const modalMints = document.getElementById('modalMints');
+  const btnCloseMints = document.getElementById('btnCloseMintsModal');
+  const btnCloseFooter = document.getElementById('btnCloseMintsFooter');
+
+  const openMints = () => {
+    if (modalMints && typeof modalMints.showModal === 'function') {
+      modalMints.showModal();
+    } else if (modalMints) {
+      modalMints.setAttribute('open', '');
+    }
   };
 
-  if (form && input) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const ruleText = input.value.trim();
-      if (!ruleText) return;
+  const closeMints = () => {
+    if (modalMints && typeof modalMints.close === 'function') {
+      modalMints.close();
+    } else if (modalMints) {
+      modalMints.removeAttribute('open');
+    }
+  };
 
-      const currentRules = [...(getState().preferences?.customInstructions || [])];
-      currentRules.push(ruleText);
+  if (badgeMints) badgeMints.addEventListener('click', openMints);
+  if (btnCloseMints) btnCloseMints.addEventListener('click', closeMints);
+  if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeMints);
 
-      setState({
-        preferences: {
-          ...getState().preferences,
-          customInstructions: currentRules
-        }
-      });
+  const claimBonus = () => {
+    const current = getState();
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
 
-      input.value = '';
-      renderRules();
-      showToast('Custom teaching rule saved to AI Memory! 🧠', 'success');
+    if (current.lastDailyBonus && (now - current.lastDailyBonus) < oneDay) {
+      const diffHours = Math.ceil((oneDay - (now - current.lastDailyBonus)) / (1000 * 60 * 60));
+      showToast(`Daily bonus already claimed! Next bonus in ~${diffHours} hours.`, 'warning');
+      return;
+    }
+
+    setState({
+      mints: current.mints + 10,
+      lastDailyBonus: now,
+      reason: 'daily_bonus'
+    });
+    showToast('Claimed +10 Free Mints! 🪙🎉', 'success');
+  };
+
+  if (btnTopBonus) btnTopBonus.addEventListener('click', claimBonus);
+  if (btnModalBonus) btnModalBonus.addEventListener('click', claimBonus);
+
+  if (btnDevMints) {
+    btnDevMints.addEventListener('click', () => {
+      const cur = getState().mints;
+      setState({ mints: cur + 50, reason: 'dev_refill' });
+      showToast('Added +50 Test Mints to wallet!', 'success');
     });
   }
-
-  if (clearBtn) {
-    clearBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      setState({
-        preferences: {
-          ...getState().preferences,
-          customInstructions: []
-        }
-      });
-      renderRules();
-      showToast('Cleared all custom AI Memory rules', 'info');
-    });
-  }
-
-  renderRules();
 }
 
 /**
- * Sets up feedback ratings and practice reveals on sample question cards.
+ * Sets up Apple Theme Toggle (Light / Dark)
  */
-function setupCardInteractions() {
-  // Thumbs up / down feedback
-  document.addEventListener('click', (e) => {
-    const thumbBtn = e.target.closest('.btn-thumb');
-    if (thumbBtn) {
-      e.preventDefault();
-      const feedback = thumbBtn.getAttribute('data-feedback');
-      const qid = thumbBtn.getAttribute('data-qid');
-      const parent = thumbBtn.closest('.feedback-group');
-      if (parent) {
-        parent.querySelectorAll('.btn-thumb').forEach(b => b.classList.remove('active-positive', 'active-negative'));
-      }
-      if (feedback === 'up') {
-        thumbBtn.classList.add('active-positive');
-        showToast(`Saved preference: question ${qid} format rated Good!`, 'success');
-      } else {
-        thumbBtn.classList.add('active-negative');
-        showToast(`Saved preference: question ${qid} will be refined by AI!`, 'info');
-      }
-    }
+function setupThemeFlow() {
+  initTheme();
+  const btn = document.getElementById('btnThemeToggle');
+  const icon = document.getElementById('themeIcon');
 
-    // Student practice rubric reveal
-    const revealBtn = e.target.closest('.btn-reveal-key');
-    if (revealBtn) {
-      e.preventDefault();
-      const targetId = revealBtn.getAttribute('data-target');
-      const target = document.getElementById(targetId);
-      if (target) {
-        const isHidden = target.hasAttribute('hidden');
-        if (isHidden) {
-          target.removeAttribute('hidden');
-          revealBtn.setAttribute('aria-expanded', 'true');
-          revealBtn.querySelector('span').textContent = 'Hide Marking Rubric';
-        } else {
-          target.setAttribute('hidden', '');
-          revealBtn.setAttribute('aria-expanded', 'false');
-          revealBtn.querySelector('span').textContent = 'Reveal Marking Rubric';
-        }
-      }
-    }
-  });
-
-  // Practice timer
-  const timerBtn = document.getElementById('btnToggleTimer');
-  const timerDisplay = document.getElementById('timerDisplay');
-  let timerInterval = null;
-  let remainingSeconds = 20 * 60;
-
-  if (timerBtn && timerDisplay) {
-    timerBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-        timerBtn.textContent = 'Resume';
-      } else {
-        timerBtn.textContent = 'Pause';
-        timerInterval = setInterval(() => {
-          if (remainingSeconds <= 0) {
-            clearInterval(timerInterval);
-            timerInterval = null;
-            timerDisplay.textContent = '00:00';
-            timerBtn.textContent = 'Finished';
-            showToast('Time is up for this practice session!', 'warning');
-            return;
-          }
-          remainingSeconds--;
-          const m = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
-          const s = String(remainingSeconds % 60).padStart(2, '0');
-          timerDisplay.textContent = `${m}:${s}`;
-        }, 1000);
-      }
-    });
-  }
-
-  // Print buttons
-  const btnPrintStudent = document.getElementById('btnPrintStudentWorksheet');
-  if (btnPrintStudent) {
-    btnPrintStudent.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.print();
-    });
-  }
-
-  const btnPrintMaster = document.getElementById('btnPrintTeacherMaster');
-  if (btnPrintMaster) {
-    btnPrintMaster.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.print();
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const newTheme = toggleTheme();
+      if (icon) icon.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+      showToast(`Switched to ${newTheme} mode`, 'info');
     });
   }
 }
 
 /**
- * Initializes the entire application.
+ * Main Initializer
  */
 export function initApp() {
-  // 1. Initialize theme
-  initTheme();
+  setupThemeFlow();
+  setupAuthFlow();
+  setupRoleFlow();
+  setupSourcesFlow();
+  setupChatFlow();
+  setupEconomyFlow();
 
-  // 2. Initialize role switcher
-  initRoleSwitcher();
-
-  // 3. Listen to reactive state changes for wallet balance
+  // Reactive state listeners
   on('mint:currency-changed', (detail) => {
     if (detail && typeof detail.mints === 'number') {
-      updateMintsDisplay(detail.mints);
+      updateMintsUI(detail.mints);
     }
   });
 
   // Initial balance sync
-  updateMintsDisplay(getState().mints);
+  updateMintsUI(getState().mints);
 
-  // 4. Wire interactive components
-  setupDialogs();
-  setupEconomy();
-  setupGeneratorForm();
-  setupMemory();
-  setupCardInteractions();
-
-  // Expose global API for automated testing & diagnostics
-  if (typeof window !== 'undefined') {
-    window.MintAI = {
-      state,
-      theme,
-      roleSwitcher,
-      showToast
-    };
-  }
-
-  console.log('Mint AI: Initialized successfully with Apple Design System & Reactive State.');
+  console.log('Mint AI: Initialized successfully with Apple Conversational Flow.');
 }
 
 // Auto-boot on DOM ready

@@ -3,777 +3,351 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mint AI — Apple-Style AI Test & Worksheet Generator</title>
+  <title>Mint AI — Intelligent Exam & Test Generator</title>
   
   <!-- Apple Mobile Web App Settings -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#F5F5F7" id="metaThemeColor">
   
-  <!-- Favicon SVG (Mint Sparkle Badge) -->
+  <!-- Favicon SVG (Mint Badge) -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300A368'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z'/></svg>">
   
-  <!-- Main Stylesheet with Apple Design Tokens -->
+  <!-- Main Stylesheet -->
   <link rel="stylesheet" href="styles.css">
   
   <!-- Puter.js v2 SDK from CDN -->
   <script src="https://js.puter.com/v2/"></script>
   
-  <!-- Application Entry Point (ES Module) -->
+  <!-- Application Entry Point -->
   <script type="module" src="js/app.js"></script>
 </head>
-<body class="role-teacher">
-  <!-- Accessibility Skip Link -->
-  <a href="#mainContent" class="skip-link">Skip to main content</a>
+<body class="mint-app-body">
 
-  <!-- Top Apple Navigation Bar -->
-  <header class="apple-nav-bar" role="banner">
-    <nav class="nav-container" aria-label="Main Application Navigation">
-      
-      <!-- Left: Brand Identity Pill -->
-      <div class="brand-pill" tabindex="0" role="link" aria-label="Mint AI Home">
-        <svg class="brand-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-        </svg>
-        <span class="brand-title">Mint <span class="brand-accent">AI</span></span>
-        <span class="brand-badge">PRO</span>
+  <!-- ======================================================== -->
+  <!-- STEP 1: AUTH SCREEN (Login / Create Account)             -->
+  <!-- ======================================================== -->
+  <div id="screenAuth" class="onboarding-screen">
+    <div class="apple-glass-card auth-card">
+      <div class="auth-brand">
+        <div class="brand-icon-wrap">
+          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#00A368" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <h1 class="auth-title">Welcome to Mint <span class="brand-accent">AI</span></h1>
+        <p class="auth-subtitle">The intelligent exam and study companion for teachers & students</p>
       </div>
 
-      <!-- Center: Apple Segmented Role Switcher -->
-      <div class="role-switcher-container" role="radiogroup" aria-label="Choose user mode" id="roleSwitcher" data-active-role="teacher">
-        <div class="role-switcher-pill" id="roleSwitcherPill" aria-hidden="true"></div>
-        <button type="button" 
-                class="role-btn active" 
-                id="btnRoleTeacher" 
-                data-role="teacher" 
-                role="radio" 
-                aria-checked="true" 
-                tabindex="0">
-          <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-          </svg>
-          <span>Teacher Mode</span>
-        </button>
-        <button type="button" 
-                class="role-btn" 
-                id="btnRoleStudent" 
-                data-role="student" 
-                role="radio" 
-                aria-checked="false" 
-                tabindex="-1">
-          <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-          </svg>
-          <span>Student Mode</span>
-        </button>
-      </div>
-
-      <!-- Right: Wallet, Puter Auth & Theme Toggle -->
-      <div class="nav-actions">
-        
-        <!-- Mints Wallet Pill -->
-        <div class="mints-wallet-container" id="mintsWalletContainer">
-          <button type="button" class="mints-badge" id="mintsBadge" aria-label="Mint Balance: 50 Mints. Click to manage economy." aria-haspopup="dialog">
-            <svg class="mint-coin-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 6v12M8 9h8M8 15h8" stroke="var(--bg-surface)" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span class="mints-count" id="mintsCount" role="status" aria-live="polite">50</span>
-            <span class="mints-unit">Mints</span>
-          </button>
-          
-          <button type="button" class="daily-bonus-btn" id="btnDailyBonus" aria-label="Claim daily 10 free Mints bonus">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            <span>+10</span>
-          </button>
+      <form id="formAuth" class="auth-form">
+        <div class="form-group">
+          <label for="inputAuthName" class="form-label">Full Name</label>
+          <input type="text" id="inputAuthName" class="apple-input" placeholder="e.g. Sarah Jenkins" required autofocus>
         </div>
 
-        <!-- Puter Auth Button -->
-        <button type="button" class="auth-btn" id="btnPuterAuth" aria-label="Sign in to Puter account" aria-haspopup="dialog">
-          <svg class="auth-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
-          </svg>
-          <span id="authStatusText">Sign In</span>
-        </button>
+        <div class="form-group">
+          <label for="inputAuthEmail" class="form-label">Email or Username</label>
+          <input type="text" id="inputAuthEmail" class="apple-input" placeholder="e.g. sarah@school.edu" required>
+        </div>
 
-        <!-- Dark / Light Theme Toggle -->
-        <button type="button" class="theme-toggle-btn" id="btnThemeToggle" aria-label="Switch between dark and light appearance" aria-pressed="false">
-          <!-- Sun Icon (shown in dark mode) -->
-          <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <circle cx="12" cy="12" r="5"/>
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
-          <!-- Moon Icon (shown in light mode) -->
-          <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        <button type="submit" class="apple-button btn-primary btn-block" id="btnAuthSubmit">
+          <span>Continue to Mint AI</span>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
           </svg>
         </button>
-      </div>
 
-    </nav>
-  </header>
-
-  <!-- Main Workspaces Container -->
-  <main id="mainContent" class="app-main">
-    
-    <!-- ============================================== -->
-    <!-- TEACHER WORKSPACE (Active in Teacher Mode)     -->
-    <!-- ============================================== -->
-    <section id="teacherWorkspace" class="workspace-section teacher-only" aria-labelledby="teacherHeading">
-      
-      <!-- Accessible Hidden Heading -->
-      <h1 id="teacherHeading" class="sr-only">Teacher Exam Generation Workspace</h1>
-
-      <!-- Left Generator Controls Panel -->
-      <div class="apple-glass-card generator-panel" id="generatorPanel">
-        <div class="panel-header">
-          <div class="panel-title-group">
-            <h2 class="panel-title">AI Test Studio</h2>
-            <p class="panel-subtitle">Generate academic test papers with grading rubrics using DeepSeek AI</p>
-          </div>
-          
-          <!-- AI Memory Badge Indicator -->
-          <button type="button" class="memory-badge-pill" id="btnOpenMemory" aria-label="AI Memory: active preferences. Click to manage." aria-haspopup="dialog">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
-              <path d="M9 21h6"/>
-            </svg>
-            <span id="memoryBadgeText">AI Memory</span>
-          </button>
+        <div class="auth-divider">
+          <span>or connect free cloud sync</span>
         </div>
 
-        <!-- Generator Form Formats -->
-        <form id="formGenerateTest" class="generator-form">
-          
-          <div class="form-row">
-            <!-- Subject Field -->
-            <div class="form-group field-subject">
-              <label for="selectSubject" class="form-label">Subject</label>
-              <select id="selectSubject" class="apple-select" required>
-                <option value="Science">General Science</option>
-                <option value="Biology" selected>Biology</option>
-                <option value="Physics">Physics</option>
-                <option value="Chemistry">Chemistry</option>
-                <option value="Mathematics">Mathematics</option>
-                <option value="Social Studies">Social Studies</option>
-                <option value="English">English Literature</option>
-              </select>
-            </div>
-
-            <!-- Grade Level Field -->
-            <div class="form-group field-grade">
-              <label for="selectGrade" class="form-label">Grade / Standard</label>
-              <select id="selectGrade" class="apple-select" required>
-                <option value="Grade 6">Grade 6</option>
-                <option value="Grade 7">Grade 7</option>
-                <option value="Grade 8">Grade 8</option>
-                <option value="Grade 9">Grade 9</option>
-                <option value="Grade 10" selected>Grade 10 (Secondary)</option>
-                <option value="Grade 11">Grade 11</option>
-                <option value="Grade 12">Grade 12 (Higher Secondary)</option>
-              </select>
-            </div>
-
-            <!-- Question Count -->
-            <div class="form-group field-count">
-              <label for="inputQuestionCount" class="form-label">Question Count</label>
-              <div class="stepper-input">
-                <input type="number" id="inputQuestionCount" class="apple-input-number" min="1" max="10" value="4" required>
-                <span class="stepper-unit">questions</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Topic Field -->
-          <div class="form-group field-topic">
-            <label for="inputTopic" class="form-label">Topic or Chapter Title</label>
-            <input type="text" id="inputTopic" class="apple-input-text" placeholder="e.g., Photosynthesis and Cellular Respiration" value="Photosynthesis and Cellular Respiration" required>
-          </div>
-
-          <!-- Academic Question Formats Selector (Checkbox Chips) -->
-          <fieldset class="formats-fieldset" aria-labelledby="formatLegend">
-            <legend id="formatLegend" class="form-label">Question Formats to Include</legend>
-            
-            <div class="format-chips-grid">
-              <label class="format-chip">
-                <input type="checkbox" name="format" value="1_mark" id="chkFormat1Mark" checked>
-                <span class="chip-label">
-                  <strong class="chip-title">1-Mark Definition</strong>
-                  <span class="chip-desc">Short 1-2 sentence core concepts</span>
-                </span>
-              </label>
-
-              <label class="format-chip">
-                <input type="checkbox" name="format" value="2_3_mark" id="chkFormat23Mark" checked>
-                <span class="chip-label">
-                  <strong class="chip-title">2 to 3 Mark Points</strong>
-                  <span class="chip-desc">Bullet-point differences or processes</span>
-                </span>
-              </label>
-
-              <label class="format-chip">
-                <input type="checkbox" name="format" value="5_mark" id="chkFormat5Mark" checked>
-                <span class="chip-label">
-                  <strong class="chip-title">5-Mark Long Answer</strong>
-                  <span class="chip-desc">Comprehensive structured explanations</span>
-                </span>
-              </label>
-
-              <label class="format-chip">
-                <input type="checkbox" name="format" value="fill_in_blanks" id="chkFormatBlanks" checked>
-                <span class="chip-label">
-                  <strong class="chip-title">Fill-in-the-Blanks</strong>
-                  <span class="chip-desc">Missing term evaluation items</span>
-                </span>
-              </label>
-            </div>
-          </fieldset>
-
-          <!-- Form Actions Footer -->
-          <div class="generator-footer">
-            <div class="cost-summary">
-              <span class="cost-label">Cost:</span>
-              <span class="cost-badge" id="mintCostSummary">
-                <span id="costNumber">4</span> Mints
-              </span>
-              <span class="cost-note">(1 Mint per question)</span>
-            </div>
-
-            <button type="submit" class="apple-button btn-primary btn-generate" id="btnGenerateTest">
-              <svg class="generate-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z"/>
-              </svg>
-              <span id="btnGenerateText">Generate Test with DeepSeek AI</span>
-              <span class="loading-spinner" id="generateSpinner" hidden aria-hidden="true"></span>
-            </button>
-          </div>
-
-        </form>
-      </div>
-
-      <!-- Right Test Output Container (Preview & Rubrics) -->
-      <div class="test-results-container" id="teacherResultsContainer">
-        
-        <!-- Results Action Toolbar -->
-        <div class="apple-glass-card results-toolbar" id="resultsToolbar">
-          <div class="toolbar-info">
-            <h3 class="active-test-title" id="displayTestTitle">Sample Test: Photosynthesis and Cellular Respiration</h3>
-            <div class="test-meta-pills">
-              <span class="meta-pill" id="displayMetaSubject">Biology</span>
-              <span class="meta-pill" id="displayMetaGrade">Grade 10</span>
-              <span class="meta-pill" id="displayMetaMarks">Total: 10 Marks</span>
-            </div>
-          </div>
-
-          <div class="toolbar-actions">
-            <button type="button" class="apple-button btn-tool" id="btnPrintStudentWorksheet" aria-label="Print clean student exam worksheet">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <polyline points="6 9 6 2 18 2 18 9"/>
-                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                <rect x="6" y="14" width="12" height="8"/>
-              </svg>
-              <span>Print Worksheet</span>
-            </button>
-
-            <button type="button" class="apple-button btn-tool" id="btnPrintTeacherMaster" aria-label="Print teacher master answer key">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10 9 9 9 8 9"/>
-              </svg>
-              <span>Teacher Key</span>
-            </button>
-
-            <button type="button" class="apple-button btn-tool btn-secondary" id="btnExportJson" aria-label="Download test data as JSON">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              <span>JSON</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Question Cards Feed -->
-        <div class="question-cards-feed" id="teacherQuestionFeed" role="feed" aria-label="Generated Exam Questions and Rubrics">
-          
-          <!-- Sample Question 1: 1-Mark Definition -->
-          <article class="apple-glass-card question-card" data-question-id="q1" aria-labelledby="q1-title">
-            <header class="card-header">
-              <div class="q-meta">
-                <span class="q-number-pill">Q1</span>
-                <span class="q-format-pill">1-Mark Definition</span>
-              </div>
-              <div class="q-marks-badge">1 Mark</div>
-            </header>
-
-            <div class="q-body">
-              <p class="q-text" id="q1-title">Define the primary physiological role of chlorophyll in plant chloroplasts.</p>
-            </div>
-
-            <details class="rubric-accordion" open>
-              <summary class="rubric-summary">
-                <span class="summary-title">Model Answer & Grading Rubric</span>
-                <span class="accordion-chevron" aria-hidden="true"></span>
-              </summary>
-              <div class="rubric-content">
-                <div class="model-answer-block">
-                  <strong>Expected Answer:</strong>
-                  <p>Chlorophyll is a photosynthetic pigment located in chloroplast thylakoid membranes that absorbs light energy (primarily blue and red wavelengths) and converts it into chemical energy (ATP/NADPH) during photosynthesis.</p>
-                </div>
-                <div class="step-rubric-table">
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">States absorption of light energy and conversion into chemical energy</span>
-                    <span class="rubric-points">1.0 Mark</span>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <footer class="card-footer">
-              <div class="feedback-group">
-                <span class="feedback-label">AI Memory Rating:</span>
-                <button type="button" class="btn-thumb thumb-up" data-feedback="up" data-qid="q1" aria-label="Thumbs up this question format">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                  </svg>
-                  <span>Good</span>
-                </button>
-                <button type="button" class="btn-thumb thumb-down" data-feedback="down" data-qid="q1" aria-label="Thumbs down this question format">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>
-                  </svg>
-                  <span>Revise</span>
-                </button>
-              </div>
-            </footer>
-          </article>
-
-          <!-- Sample Question 2: 2-3 Mark Differentiation -->
-          <article class="apple-glass-card question-card" data-question-id="q2" aria-labelledby="q2-title">
-            <header class="card-header">
-              <div class="q-meta">
-                <span class="q-number-pill">Q2</span>
-                <span class="q-format-pill">3-Mark Differentiation</span>
-              </div>
-              <div class="q-marks-badge">3 Marks</div>
-            </header>
-
-            <div class="q-body">
-              <p class="q-text" id="q2-title">Distinguish between aerobic and anaerobic respiration in living organisms (give 3 distinct comparative points).</p>
-            </div>
-
-            <details class="rubric-accordion" open>
-              <summary class="rubric-summary">
-                <span class="summary-title">Model Answer & Grading Rubric</span>
-                <span class="accordion-chevron" aria-hidden="true"></span>
-              </summary>
-              <div class="rubric-content">
-                <div class="model-answer-block">
-                  <strong>Expected Answer:</strong>
-                  <p>1. Oxygen Requirement: Aerobic requires molecular oxygen; anaerobic occurs in the absence of oxygen.<br>
-                     2. Energy Yield: Aerobic yields high energy (36-38 ATP); anaerobic yields low energy (2 ATP).<br>
-                     3. End Products: Aerobic produces CO2 and H2O; anaerobic produces lactic acid or ethanol + CO2.</p>
-                </div>
-                <div class="step-rubric-table">
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">Point 1: Oxygen dependence</span>
-                    <span class="rubric-points">1.0 Mark</span>
-                  </div>
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">Point 2: Net ATP yield comparison</span>
-                    <span class="rubric-points">1.0 Mark</span>
-                  </div>
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">Point 3: End metabolic products</span>
-                    <span class="rubric-points">1.0 Mark</span>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <footer class="card-footer">
-              <div class="feedback-group">
-                <span class="feedback-label">AI Memory Rating:</span>
-                <button type="button" class="btn-thumb thumb-up" data-feedback="up" data-qid="q2" aria-label="Thumbs up this question format">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                  </svg>
-                  <span>Good</span>
-                </button>
-                <button type="button" class="btn-thumb thumb-down" data-feedback="down" data-qid="q2" aria-label="Thumbs down this question format">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>
-                  </svg>
-                  <span>Revise</span>
-                </button>
-              </div>
-            </footer>
-          </article>
-
-          <!-- Sample Question 3: 5-Mark Long Answer -->
-          <article class="apple-glass-card question-card" data-question-id="q3" aria-labelledby="q3-title">
-            <header class="card-header">
-              <div class="q-meta">
-                <span class="q-number-pill">Q3</span>
-                <span class="q-format-pill">5-Mark Long Answer</span>
-              </div>
-              <div class="q-marks-badge">5 Marks</div>
-            </header>
-
-            <div class="q-body">
-              <p class="q-text" id="q3-title">Describe the structural compartmentalization of a mitochondrion and explain how each structure contributes to cellular respiration.</p>
-            </div>
-
-            <details class="rubric-accordion" open>
-              <summary class="rubric-summary">
-                <span class="summary-title">Model Answer & Grading Rubric</span>
-                <span class="accordion-chevron" aria-hidden="true"></span>
-              </summary>
-              <div class="rubric-content">
-                <div class="model-answer-block">
-                  <strong>Expected Answer:</strong>
-                  <p>Mitochondria have an outer membrane, inner membrane, cristae, and matrix. Outer membrane contains porins. Inner membrane houses ATP synthase and electron transport chain. Cristae maximize surface area for phosphorylation. Matrix contains Krebs cycle enzymes, ribosomes, and mtDNA.</p>
-                </div>
-                <div class="step-rubric-table">
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">Introduction and outer membrane permeability</span>
-                    <span class="rubric-points">1.0 Mark</span>
-                  </div>
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">Cristae structure and surface area role</span>
-                    <span class="rubric-points">1.5 Marks</span>
-                  </div>
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">Inner membrane electron transport chain mechanism</span>
-                    <span class="rubric-points">1.5 Marks</span>
-                  </div>
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">Matrix contents (Krebs enzymes, mtDNA) & summary</span>
-                    <span class="rubric-points">1.0 Mark</span>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <footer class="card-footer">
-              <div class="feedback-group">
-                <span class="feedback-label">AI Memory Rating:</span>
-                <button type="button" class="btn-thumb thumb-up" data-feedback="up" data-qid="q3" aria-label="Thumbs up this question format">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                  </svg>
-                  <span>Good</span>
-                </button>
-                <button type="button" class="btn-thumb thumb-down" data-feedback="down" data-qid="q3" aria-label="Thumbs down this question format">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>
-                  </svg>
-                  <span>Revise</span>
-                </button>
-              </div>
-            </footer>
-          </article>
-
-          <!-- Sample Question 4: Fill in the Blanks -->
-          <article class="apple-glass-card question-card" data-question-id="q4" aria-labelledby="q4-title">
-            <header class="card-header">
-              <div class="q-meta">
-                <span class="q-number-pill">Q4</span>
-                <span class="q-format-pill">Fill-in-the-Blanks</span>
-              </div>
-              <div class="q-marks-badge">1 Mark</div>
-            </header>
-
-            <div class="q-body">
-              <p class="q-text" id="q4-title">The primary energy storage molecule generated by mitochondria during respiration is [blank_1], synthesized through cellular [blank_2].</p>
-            </div>
-
-            <details class="rubric-accordion" open>
-              <summary class="rubric-summary">
-                <span class="summary-title">Model Answer & Grading Rubric</span>
-                <span class="accordion-chevron" aria-hidden="true"></span>
-              </summary>
-              <div class="rubric-content">
-                <div class="model-answer-block">
-                  <strong>Expected Answer:</strong>
-                  <p>[blank_1] ATP (Adenosine Triphosphate)<br>[blank_2] Respiration</p>
-                </div>
-                <div class="step-rubric-table">
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">Correct identification of [blank_1] as ATP</span>
-                    <span class="rubric-points">0.5 Mark</span>
-                  </div>
-                  <div class="rubric-row">
-                    <span class="rubric-criterion">Correct identification of [blank_2] as respiration</span>
-                    <span class="rubric-points">0.5 Mark</span>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <footer class="card-footer">
-              <div class="feedback-group">
-                <span class="feedback-label">AI Memory Rating:</span>
-                <button type="button" class="btn-thumb thumb-up" data-feedback="up" data-qid="q4" aria-label="Thumbs up this question format">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                  </svg>
-                  <span>Good</span>
-                </button>
-                <button type="button" class="btn-thumb thumb-down" data-feedback="down" data-qid="q4" aria-label="Thumbs down this question format">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3"/>
-                  </svg>
-                  <span>Revise</span>
-                </button>
-              </div>
-            </footer>
-          </article>
-
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- ============================================== -->
-    <!-- STUDENT WORKSPACE (Active in Student Mode)     -->
-    <!-- ============================================== -->
-    <section id="studentWorkspace" class="workspace-section student-only" aria-labelledby="studentHeading" hidden>
-      
-      <!-- Accessible Hidden Heading -->
-      <h1 id="studentHeading" class="sr-only">Student Practice & Self-Test Workspace</h1>
-
-      <!-- Student Test Header Card -->
-      <div class="apple-glass-card student-header-card">
-        <div class="student-meta-row">
-          <div>
-            <h2 class="student-test-title" id="studentExamTitle">Practice Worksheet: Biology (Grade 10)</h2>
-            <p class="student-test-sub" id="studentExamTopic">Topic: Photosynthesis and Cellular Respiration</p>
-          </div>
-          
-          <!-- Practice Timer -->
-          <div class="timer-widget" id="practiceTimerWidget">
-            <span class="timer-icon" aria-hidden="true">⏱️</span>
-            <span class="timer-display" id="timerDisplay">20:00</span>
-            <button type="button" class="btn-timer-toggle" id="btnToggleTimer" aria-label="Start or pause practice timer">Start</button>
-          </div>
-        </div>
-
-        <div class="student-instructions">
-          <p><strong>Instructions:</strong> Read each question carefully. Type your answers into the answer boxes below. When finished, use the marking rubric buttons to self-check your understanding.</p>
-        </div>
-      </div>
-
-      <!-- Student Practice Question List -->
-      <div class="student-questions-feed" id="studentQuestionFeed" role="feed" aria-label="Student Practice Questions">
-        
-        <!-- Practice Question 1 -->
-        <article class="apple-glass-card student-q-card" data-question-id="sq1">
-          <header class="card-header">
-            <div class="q-meta">
-              <span class="q-number-pill">Question 1</span>
-              <span class="q-marks-pill">1 Mark</span>
-            </div>
-          </header>
-          
-          <div class="q-body">
-            <p class="q-prompt" id="sq1-prompt">Define the primary physiological role of chlorophyll in plant chloroplasts.</p>
-            
-            <div class="student-input-container">
-              <label for="studentAnswer1" class="sr-only">Your answer for Question 1</label>
-              <textarea id="studentAnswer1" class="apple-textarea student-answer-box" rows="3" placeholder="Type your answer here..."></textarea>
-            </div>
-          </div>
-
-          <footer class="card-footer">
-            <button type="button" class="apple-button btn-reveal-key" data-target="sq1-rubric" aria-expanded="false">
-              <span>Reveal Marking Rubric</span>
-            </button>
-            <div id="sq1-rubric" class="student-rubric-reveal" hidden>
-              <div class="model-hint">
-                <strong>Model Key:</strong> Chlorophyll absorbs light energy (blue/red wavelengths) and converts it into chemical energy during photosynthesis.
-              </div>
-            </div>
-          </footer>
-        </article>
-
-        <!-- Practice Question 2 -->
-        <article class="apple-glass-card student-q-card" data-question-id="sq2">
-          <header class="card-header">
-            <div class="q-meta">
-              <span class="q-number-pill">Question 2</span>
-              <span class="q-marks-pill">3 Marks</span>
-            </div>
-          </header>
-          
-          <div class="q-body">
-            <p class="q-prompt" id="sq2-prompt">Distinguish between aerobic and anaerobic respiration in living organisms (give 3 distinct comparative points).</p>
-            
-            <div class="student-input-container">
-              <label for="studentAnswer2" class="sr-only">Your answer for Question 2</label>
-              <textarea id="studentAnswer2" class="apple-textarea student-answer-box" rows="4" placeholder="Type your 3 points here..."></textarea>
-            </div>
-          </div>
-
-          <footer class="card-footer">
-            <button type="button" class="apple-button btn-reveal-key" data-target="sq2-rubric" aria-expanded="false">
-              <span>Reveal Marking Rubric</span>
-            </button>
-            <div id="sq2-rubric" class="student-rubric-reveal" hidden>
-              <div class="model-hint">
-                <strong>Model Key:</strong> 1. Oxygen: Aerobic requires O2, anaerobic does not. 2. ATP: Aerobic produces 36-38 ATP, anaerobic produces 2 ATP. 3. Products: Aerobic yields CO2 + H2O, anaerobic yields lactic acid/ethanol.
-              </div>
-            </div>
-          </footer>
-        </article>
-
-      </div>
-
-      <!-- Student Bottom Actions -->
-      <div class="student-actions-bar">
-        <button type="button" class="apple-button btn-primary" id="btnCompletePractice">
-          <span>Complete Practice Session</span>
+        <button type="button" class="apple-button btn-secondary btn-block" id="btnPuterQuickSignIn">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+          </svg>
+          <span>Sign In with Puter Cloud</span>
         </button>
-      </div>
-
-    </section>
-
-  </main>
-
-  <!-- ============================================== -->
-  <!-- DEDICATED A4 PRINT WORKSHEET CONTAINER          -->
-  <!-- ============================================== -->
-  <section id="printableWorksheet" class="printable-worksheet" aria-hidden="true">
-    
-    <!-- Student Printable Test Paper -->
-    <div class="print-page print-student-paper" id="printStudentPaper">
-      <header class="print-exam-header">
-        <div class="school-title">ACADEMIC EVALUATION WORKSHEET</div>
-        <div class="exam-title" id="printExamTitle">Topic: Photosynthesis and Cellular Respiration</div>
-        
-        <div class="meta-grid">
-          <div class="meta-field"><strong>Student Name:</strong> _____________________________</div>
-          <div class="meta-field"><strong>Date:</strong> _________________</div>
-          <div class="meta-field"><strong>Grade:</strong> <span id="printGradeDisplay">Grade 10</span></div>
-          <div class="meta-field"><strong>Max Marks:</strong> <span id="printMaxMarksDisplay">10</span></div>
-        </div>
-      </header>
-
-      <div class="print-questions-body" id="printStudentQuestions">
-        <!-- Rendered into print view -->
-      </div>
-    </div>
-
-    <!-- Teacher Master Copy (Forced to next page) -->
-    <div class="print-page print-teacher-paper teacher-master-section" id="printTeacherPaper">
-      <header class="print-exam-header master-header">
-        <div class="school-title">TEACHER MASTER ANSWER KEY & RUBRIC</div>
-        <div class="exam-title" id="printMasterTitle">Topic: Photosynthesis and Cellular Respiration</div>
-        <div class="meta-grid">
-          <div class="meta-field"><strong>Subject:</strong> <span id="printMasterSubject">Biology</span></div>
-          <div class="meta-field"><strong>Grade:</strong> <span id="printMasterGrade">Grade 10</span></div>
-          <div class="meta-field"><strong>Total Marks:</strong> <span id="printMasterMarks">10 Marks</span></div>
-        </div>
-      </header>
-
-      <div class="print-questions-body" id="printTeacherQuestions">
-        <!-- Rendered into print view -->
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ============================================== -->
-  <!-- ACCESSIBLE MODALS AND POPUPS                   -->
-  <!-- ============================================== -->
-
-  <!-- 1. Puter Authentication Dialog -->
-  <dialog class="apple-glass-dialog" id="dialogAuth" aria-labelledby="dialogAuthTitle" aria-describedby="dialogAuthDesc">
-    <div class="dialog-content">
-      <button type="button" class="btn-close-dialog" id="btnCloseAuth" aria-label="Close authentication window">✕</button>
-      <div class="dialog-icon-pill">
-        <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--mint-primary)" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-      </div>
-      <h3 id="dialogAuthTitle" class="dialog-title">Sign In with Puter</h3>
-      <p id="dialogAuthDesc" class="dialog-desc">Mint AI connects to Puter.js for secure cloud memory and DeepSeek AI test generation. Sign in or create a free account in one click.</p>
-      
-      <div class="dialog-actions">
-        <button type="button" class="apple-button btn-primary btn-full" id="btnConfirmSignIn">
-          <span>Sign In with Puter</span>
-        </button>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- 2. Mints Economy & Daily Bonus Dialog -->
-  <dialog class="apple-glass-dialog" id="dialogMints" aria-labelledby="dialogMintsTitle">
-    <div class="dialog-content">
-      <button type="button" class="btn-close-dialog" id="btnCloseMints" aria-label="Close mints economy window">✕</button>
-      
-      <h3 id="dialogMintsTitle" class="dialog-title">Mints Economy</h3>
-      <div class="mints-status-card">
-        <span class="mints-big-number" id="dialogMintsCount">50</span>
-        <span class="mints-big-label">Available Mints</span>
-      </div>
-
-      <div class="bonus-section">
-        <p class="bonus-text">Claim 10 free Mints once every 24 hours.</p>
-        <button type="button" class="apple-button btn-primary" id="btnClaimModalBonus">
-          <span>Claim +10 Daily Bonus</span>
-        </button>
-        <div class="bonus-timer" id="dailyBonusCountdown" hidden>Next bonus available in 24 hours</div>
-      </div>
-
-      <div class="refill-section">
-        <h4 class="refill-title">Development Refill</h4>
-        <button type="button" class="apple-button btn-secondary" id="btnDevRefill50">
-          <span>+50 Test Mints</span>
-        </button>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- 3. AI Memory Management Dialog -->
-  <dialog class="apple-glass-dialog" id="dialogMemory" aria-labelledby="dialogMemoryTitle">
-    <div class="dialog-content">
-      <button type="button" class="btn-close-dialog" id="btnCloseMemory" aria-label="Close memory settings">✕</button>
-      
-      <h3 id="dialogMemoryTitle" class="dialog-title">Teacher AI Memory</h3>
-      <p class="dialog-desc">DeepSeek AI remembers these rules when crafting test questions for your classes.</p>
-
-      <form id="formAddRule" class="add-rule-form">
-        <label for="inputCustomRule" class="sr-only">Add custom teaching rule</label>
-        <div class="rule-input-group">
-          <input type="text" id="inputCustomRule" class="apple-input-text" placeholder="e.g., Always use 3 comparative points for 3-mark questions">
-          <button type="submit" class="apple-button btn-primary" id="btnAddRule">Add</button>
-        </div>
       </form>
+    </div>
+  </div>
 
-      <div class="memory-rules-list" id="memoryRulesList" role="list" aria-label="Saved teaching preferences">
-        <!-- Dynamically rendered rules with remove buttons -->
+  <!-- ======================================================== -->
+  <!-- STEP 2: ROLE SELECTION SCREEN (Teacher or Student)       -->
+  <!-- ======================================================== -->
+  <div id="screenRole" class="onboarding-screen" hidden>
+    <div class="apple-glass-card role-card-wrapper">
+      <div class="auth-brand">
+        <h2 class="auth-title">Choose Your Role</h2>
+        <p class="auth-subtitle">Select how you want to use Mint AI today</p>
       </div>
 
-      <div class="dialog-actions-bottom">
-        <button type="button" class="apple-button btn-danger-outline btn-full" id="btnClearMemory">Clear All Rules</button>
+      <div class="role-selection-grid">
+        <!-- Teacher Role Card -->
+        <div class="role-option-card" id="cardRoleTeacher" tabindex="0" role="button" aria-pressed="false" data-role="teacher">
+          <div class="role-icon">👨‍🏫</div>
+          <h3 class="role-name">Teacher</h3>
+          <p class="role-desc">Generate standard school tests, 1-mark definitions, 3-mark bullet points, 5-mark long answers, model answer keys, and printable A4 worksheets.</p>
+          <div class="role-check-indicator">✓</div>
+        </div>
+
+        <!-- Student Role Card -->
+        <div class="role-option-card" id="cardRoleStudent" tabindex="0" role="button" aria-pressed="false" data-role="student">
+          <div class="role-icon">🎓</div>
+          <h3 class="role-name">Student</h3>
+          <p class="role-desc">Practice custom exam questions, test your knowledge, check step-by-step marking rubrics, and strengthen your weak areas.</p>
+          <div class="role-check-indicator">✓</div>
+        </div>
       </div>
+
+      <button type="button" class="apple-button btn-primary btn-block btn-role-confirm" id="btnConfirmRole" disabled>
+        <span>Enter Mint AI Studio</span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- STEP 3: CLEAN CHAT & TEST GENERATOR WORKSPACE            -->
+  <!-- ======================================================== -->
+  <div id="screenApp" class="app-workspace" hidden>
+    
+    <!-- Apple Top Navigation Bar -->
+    <header class="app-topbar">
+      <div class="topbar-left">
+        <div class="brand-pill">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#00A368" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <span class="brand-text">Mint <span class="brand-accent">AI</span></span>
+        </div>
+
+        <div class="current-role-pill" id="currentRolePill">
+          <span id="roleBadgeText">👨‍🏫 Teacher Mode</span>
+          <button type="button" class="btn-role-switch-link" id="btnSwitchRole" title="Switch between Teacher and Student">Switch</button>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Sources indicator -->
+        <button type="button" class="sources-status-pill" id="btnTopSources" title="View attached sources">
+          <span class="source-icon">📎</span>
+          <span id="topSourcesCount">0 Sources</span>
+        </button>
+
+        <!-- Mints Currency Badge -->
+        <button type="button" class="mints-badge" id="mintsBadge" title="Mint Coins Balance. 1 Question = 1 Mint">
+          <span class="mint-icon">🪙</span>
+          <span class="mints-count" id="mintsCount">50</span>
+          <span class="mints-label">Mints</span>
+        </button>
+
+        <!-- Daily Bonus Button -->
+        <button type="button" class="btn-bonus-claim" id="btnDailyBonus" title="Claim +10 daily free Mints">
+          <span>+10 Free</span>
+        </button>
+
+        <!-- Theme Toggle -->
+        <button type="button" class="theme-toggle-btn" id="btnThemeToggle" title="Toggle Light and Dark Mode">
+          <span class="theme-icon" id="themeIcon">☀️</span>
+        </button>
+
+        <!-- User Profile Pill -->
+        <div class="user-profile-pill" id="userProfilePill">
+          <span class="user-avatar" id="userAvatar">👤</span>
+          <span class="user-name" id="displayUserName">Teacher</span>
+          <button type="button" class="btn-logout" id="btnLogout" title="Log out">✕</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Chat Messages Scroll Container -->
+    <main class="chat-main-container" id="chatMainContainer">
+      
+      <!-- Welcome Hero (Displayed when conversation is fresh) -->
+      <section class="chat-hero-section" id="chatHero">
+        <div class="hero-sparkle">✨</div>
+        <h1 class="chat-hero-title">hey welcome to mint ai</h1>
+        <p class="chat-hero-desc" id="heroRoleDesc">
+          I generate standard school exam papers, definitions, multi-mark questions, and full marking rubrics in seconds. Type your request or attach your notes below!
+        </p>
+
+        <!-- Suggestion Prompt Chips -->
+        <div class="suggestion-chips-grid">
+          <button type="button" class="suggestion-chip" data-prompt="Create a 4-question Science test on Mitochondria and Cellular Respiration for Grade 9 with marking rubric">
+            🧬 4-Question Test: Mitochondria & Respiration
+          </button>
+          <button type="button" class="suggestion-chip" data-prompt="Generate a 1-mark definition worksheet on Photosynthesis with model answers">
+            🌿 1-Mark Definitions: Photosynthesis
+          </button>
+          <button type="button" class="suggestion-chip" data-prompt="Make a 5-mark long answer exam question on Newton's Laws of Motion with step-by-step grading criteria">
+            ⚡ 5-Mark Long Answer: Newton's Laws
+          </button>
+          <button type="button" class="suggestion-chip" data-prompt="Create a fill-in-the-blanks practice worksheet on Chemical Reactions for Grade 10">
+            🧪 Fill-in-the-Blanks: Chemical Reactions
+          </button>
+        </div>
+      </section>
+
+      <!-- Message History Container -->
+      <div class="chat-feed" id="chatFeed">
+        <!-- Messages & Generated Test Cards dynamically rendered here -->
+      </div>
+
+    </main>
+
+    <!-- Floating Apple Chat Input Bar -->
+    <footer class="chat-input-container">
+      
+      <!-- Active Attached Sources Bar (preview pills) -->
+      <div class="attached-sources-preview" id="sourcesPreviewBar" hidden>
+        <span class="sources-label">Attached Sources:</span>
+        <div class="sources-tags-list" id="sourcesTagsList"></div>
+      </div>
+
+      <div class="apple-glass-card chat-input-bar">
+        
+        <!-- Add Sources Button -->
+        <button type="button" class="btn-add-sources" id="btnOpenSourceModal" title="Attach textbook notes, syllabus, or chapters">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Add Sources</span>
+        </button>
+
+        <!-- Chat Textarea Input -->
+        <div class="input-field-wrap">
+          <textarea 
+            id="chatInput" 
+            class="chat-textarea" 
+            rows="1" 
+            placeholder="Type like talking to AI... e.g. 'Make a 5-question test on Cell Structure for Grade 8'" 
+            aria-label="Ask Mint AI to generate a test"></textarea>
+        </div>
+
+        <!-- Question Count Selector -->
+        <div class="quick-options-wrap">
+          <select id="selectQuickCount" class="apple-select-mini" title="Number of questions">
+            <option value="4" selected>4 Questions (4 Mints)</option>
+            <option value="6">6 Questions (6 Mints)</option>
+            <option value="8">8 Questions (8 Mints)</option>
+            <option value="10">10 Questions (10 Mints)</option>
+          </select>
+        </div>
+
+        <!-- Send Button -->
+        <button type="button" class="btn-send-message" id="btnSendMessage" aria-label="Send message to Mint AI">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+
+      </div>
+
+      <div class="input-subtext">
+        <span>Mint AI uses DeepSeek V4.1. Tests deduct 1 Mint per question. Press Enter to generate.</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL: ADD YOUR OWN SOURCES (Textbook / Notes)           -->
+  <!-- ======================================================== -->
+  <dialog id="modalSources" class="apple-modal">
+    <div class="modal-content">
+      <header class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-badge-icon">📎</span>
+          <h2 class="modal-title">Add Your Teaching Sources</h2>
+        </div>
+        <button type="button" class="btn-modal-close" id="btnCloseSourcesModal">✕</button>
+      </header>
+
+      <div class="modal-body">
+        <p class="modal-description">
+          Add textbook paragraphs, syllabus notes, or chapter text. Mint AI will craft standard exam questions based specifically on your materials!
+        </p>
+
+        <!-- Paste Text Area -->
+        <div class="form-group">
+          <label for="inputSourceTitle" class="form-label">Source Title</label>
+          <input type="text" id="inputSourceTitle" class="apple-input" placeholder="e.g. Chapter 4: Mitochondria & ATP Notes">
+        </div>
+
+        <div class="form-group">
+          <label for="inputSourceContent" class="form-label">Paste Notes / Textbook Content</label>
+          <textarea id="inputSourceContent" class="apple-textarea" rows="6" placeholder="Paste your lesson notes, textbook explanations, or key definitions here..."></textarea>
+        </div>
+
+        <div class="source-file-upload">
+          <label class="file-upload-btn">
+            <span>Or upload .txt / .md notes file</span>
+            <input type="file" id="fileSourceUpload" accept=".txt,.md,.json" hidden>
+          </label>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="apple-button btn-secondary" id="btnCancelSource">Cancel</button>
+        <button type="button" class="apple-button btn-primary" id="btnSaveSource">
+          <span>Attach to Mint AI</span>
+        </button>
+      </footer>
     </div>
   </dialog>
 
-  <!-- Floating Toast Notification Container -->
-  <div id="toastContainer" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+  <!-- ======================================================== -->
+  <!-- MODAL: MINTS WALLET & REFILLS                            -->
+  <!-- ======================================================== -->
+  <dialog id="modalMints" class="apple-modal">
+    <div class="modal-content">
+      <header class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-badge-icon">🪙</span>
+          <h2 class="modal-title">Mint Coins Wallet</h2>
+        </div>
+        <button type="button" class="btn-modal-close" id="btnCloseMintsModal">✕</button>
+      </header>
+
+      <div class="modal-body">
+        <div class="wallet-balance-box">
+          <span class="wallet-title">Your Current Balance</span>
+          <div class="wallet-number-row">
+            <span class="wallet-coin">🪙</span>
+            <span class="wallet-val" id="dialogMintsCount">50</span>
+            <span class="wallet-currency">Mints</span>
+          </div>
+          <p class="wallet-rate">Rate: 1 Mint = 1 Generated Exam Question with Rubric</p>
+        </div>
+
+        <div class="refill-options-grid">
+          <div class="refill-card">
+            <h4>Daily Tutor Gift</h4>
+            <p>10 Mints every 24 hours</p>
+            <button type="button" class="apple-button btn-secondary btn-sm" id="btnClaimDailyModal">Claim +10 Mints</button>
+          </div>
+          <div class="refill-card">
+            <h4>Free Testing Refill</h4>
+            <p>Developer test credit pack</p>
+            <button type="button" class="apple-button btn-secondary btn-sm" id="btnDevAddMints">+50 Test Mints</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="apple-button btn-secondary" id="btnCloseMintsFooter">Done</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- Hidden Toast Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
 </body>
 </html>
