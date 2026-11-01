@@ -2,22 +2,20 @@
  * Mint AI — Conversational Apple-Style App (js/app.js)
  * 
  * Simple explanation:
- * Think of this file like the friendly host of Mint AI:
- * 1. Welcomes you at the front door (Login screen).
- * 2. Asks if you're a Teacher or Student (Role screen).
- * 3. Opens the clean Apple chat studio where you can talk to AI,
- *    attach your textbook notes, and generate ready-to-print tests!
+ * 1. Step 1: Login + Name + Role all in one clean card.
+ * 2. Step 2: "Hey welcome to Mint AI" with a floating typing bar that
+ *    follows you everywhere, letting you pick grade, topic, question count,
+ *    and attach notes!
  */
 
 import state, { getState, setState, on } from './state.js';
 import theme, { initTheme, toggleTheme } from './theme.js';
 
-// Active sources attached by user
+// Attached sources list
 let attachedSources = [];
 
 /**
  * Toast Notification System
- * Displays unobtrusive Apple-style pill alerts in the corner.
  */
 export function showToast(message, type = 'info', duration = 3500) {
   const container = document.getElementById('toastContainer');
@@ -50,20 +48,18 @@ export function showToast(message, type = 'info', duration = 3500) {
 }
 
 /**
- * Screen Navigator (Auth -> Role -> Chat App)
+ * Screen Navigator (Auth vs Chat App)
  */
 function navigateToScreen(screenName) {
   const screenAuth = document.getElementById('screenAuth');
-  const screenRole = document.getElementById('screenRole');
   const screenApp = document.getElementById('screenApp');
 
   if (screenAuth) screenAuth.hidden = (screenName !== 'auth');
-  if (screenRole) screenRole.hidden = (screenName !== 'role');
   if (screenApp) screenApp.hidden = (screenName !== 'app');
 
   if (screenName === 'app') {
     const chatInput = document.getElementById('chatInput');
-    if (chatInput) setTimeout(() => chatInput.focus(), 200);
+    if (chatInput) setTimeout(() => chatInput.focus(), 250);
   }
 }
 
@@ -86,13 +82,13 @@ function updateHeaderUserInfo() {
   }
   if (heroRoleDesc) {
     heroRoleDesc.textContent = isTeacher
-      ? 'I generate standard school exam papers, definitions, multi-mark questions, and full marking rubrics in seconds. Type your request or attach your notes below!'
-      : 'I create interactive practice quizzes with instant grading and step-by-step solutions to help you study. Type any topic to begin!';
+      ? 'Pick your grade, topic, and number of questions below, or talk to me like an AI assistant to make tests!'
+      : 'Select your grade and chapter below to generate practice questions with step-by-step marking rubrics!';
   }
 }
 
 /**
- * Updates wallet currency count in top bar and modals
+ * Updates wallet currency in top bar and modals
  */
 function updateMintsUI(mints) {
   const countEl = document.getElementById('mintsCount');
@@ -102,37 +98,56 @@ function updateMintsUI(mints) {
 }
 
 /**
- * Step 1: Sets up Login / Authentication Screen
+ * Step 1: Unified Login + Name + Role Flow
  */
-function setupAuthFlow() {
+function setupUnifiedAuthFlow() {
   const formAuth = document.getElementById('formAuth');
   const inputName = document.getElementById('inputAuthName');
   const inputEmail = document.getElementById('inputAuthEmail');
+  const btnPickerTeacher = document.getElementById('btnPickerTeacher');
+  const btnPickerStudent = document.getElementById('btnPickerStudent');
+  const roleHint = document.getElementById('rolePickerHint');
   const btnPuterQuick = document.getElementById('btnPuterQuickSignIn');
 
-  // Check saved session
+  let chosenRole = 'teacher';
+
+  // Toggle role in segment picker
+  if (btnPickerTeacher && btnPickerStudent) {
+    btnPickerTeacher.addEventListener('click', () => {
+      chosenRole = 'teacher';
+      btnPickerTeacher.classList.add('active');
+      btnPickerStudent.classList.remove('active');
+      if (roleHint) roleHint.textContent = 'Teacher mode creates exam papers, answer keys, and printable A4 worksheets.';
+    });
+
+    btnPickerStudent.addEventListener('click', () => {
+      chosenRole = 'student';
+      btnPickerStudent.classList.add('active');
+      btnPickerTeacher.classList.remove('active');
+      if (roleHint) roleHint.textContent = 'Student mode creates practice quizzes with instant grading and explanations.';
+    });
+  }
+
+  // Restore previous session if present
   try {
     const savedUser = localStorage.getItem('mintai_user');
     const savedRole = localStorage.getItem('mintai_role');
 
     if (savedUser) {
       const userObj = JSON.parse(savedUser);
-      setState({ user: userObj });
-      if (savedRole) {
-        setState({ role: savedRole });
-        updateHeaderUserInfo();
-        navigateToScreen('app');
-        return;
-      } else {
-        navigateToScreen('role');
-        return;
-      }
+      setState({
+        user: userObj,
+        role: savedRole || 'teacher'
+      });
+      updateHeaderUserInfo();
+      navigateToScreen('app');
+      return;
     }
   } catch (e) {
-    console.warn('Session restore note:', e);
+    console.warn('Session check note:', e);
   }
 
-  // Normal Form Submit
+  // Handle Form Submit
   if (formAuth) {
     formAuth.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -146,17 +161,23 @@ function setupAuthFlow() {
         uid: 'user_' + Date.now()
       };
 
-      setState({ user: userObj });
+      setState({
+        user: userObj,
+        role: chosenRole
+      });
+
       try {
         localStorage.setItem('mintai_user', JSON.stringify(userObj));
+        localStorage.setItem('mintai_role', chosenRole);
       } catch (err) {}
 
-      showToast(`Welcome, ${name}! Please choose your role.`, 'success');
-      navigateToScreen('role');
+      updateHeaderUserInfo();
+      showToast(`Welcome, ${name}! Mint AI is ready. 🚀`, 'success');
+      navigateToScreen('app');
     });
   }
 
-  // Puter Cloud Sign In
+  // Handle Puter Cloud Quick Login
   if (btnPuterQuick) {
     btnPuterQuick.addEventListener('click', async () => {
       if (typeof window !== 'undefined' && window.puter && window.puter.auth) {
@@ -169,68 +190,35 @@ function setupAuthFlow() {
             email: pUser?.email || '',
             uid: pUser?.uuid || 'puter_user'
           };
-          setState({ user: userObj });
+          setState({
+            user: userObj,
+            role: chosenRole
+          });
           localStorage.setItem('mintai_user', JSON.stringify(userObj));
-          showToast(`Connected to Puter Cloud as ${userObj.username}! 🟢`, 'success');
-          navigateToScreen('role');
+          localStorage.setItem('mintai_role', chosenRole);
+          updateHeaderUserInfo();
+          showToast(`Signed in to Puter Cloud as ${userObj.username}! 🟢`, 'success');
+          navigateToScreen('app');
         } catch (err) {
           showToast('Puter sign-in was canceled or unavailable.', 'info');
         }
       } else {
-        // Fallback for standalone browser testing
         const userObj = {
           signedIn: true,
-          username: 'Guest Teacher',
+          username: inputName?.value.trim() || 'Guest Teacher',
           email: 'guest@mintai.app',
           uid: 'guest_' + Date.now()
         };
-        setState({ user: userObj });
+        setState({ user: userObj, role: chosenRole });
         localStorage.setItem('mintai_user', JSON.stringify(userObj));
-        navigateToScreen('role');
+        localStorage.setItem('mintai_role', chosenRole);
+        updateHeaderUserInfo();
+        navigateToScreen('app');
       }
     });
   }
-}
 
-/**
- * Step 2: Sets up Role Selection Screen (Teacher vs Student)
- */
-function setupRoleFlow() {
-  const cardTeacher = document.getElementById('cardRoleTeacher');
-  const cardStudent = document.getElementById('cardRoleStudent');
-  const btnConfirm = document.getElementById('btnConfirmRole');
-  let selectedRole = null;
-
-  const selectRole = (role) => {
-    selectedRole = role;
-    if (cardTeacher) cardTeacher.classList.toggle('selected', role === 'teacher');
-    if (cardStudent) cardStudent.classList.toggle('selected', role === 'student');
-    if (btnConfirm) btnConfirm.disabled = false;
-  };
-
-  if (cardTeacher) {
-    cardTeacher.addEventListener('click', () => selectRole('teacher'));
-  }
-  if (cardStudent) {
-    cardStudent.addEventListener('click', () => selectRole('student'));
-  }
-
-  if (btnConfirm) {
-    btnConfirm.addEventListener('click', () => {
-      if (!selectedRole) return;
-
-      setState({ role: selectedRole });
-      try {
-        localStorage.setItem('mintai_role', selectedRole);
-      } catch (e) {}
-
-      updateHeaderUserInfo();
-      showToast(`Role confirmed: ${selectedRole === 'teacher' ? 'Teacher Studio' : 'Student Hub'} ready! 🚀`, 'success');
-      navigateToScreen('app');
-    });
-  }
-
-  // Header quick switch button
+  // Switch role button in header
   const btnSwitchRole = document.getElementById('btnSwitchRole');
   if (btnSwitchRole) {
     btnSwitchRole.addEventListener('click', () => {
@@ -256,13 +244,13 @@ function setupRoleFlow() {
         role: 'teacher'
       });
       navigateToScreen('auth');
-      showToast('Logged out successfully.', 'info');
+      showToast('Logged out.', 'info');
     });
   }
 }
 
 /**
- * Step 3: Sets up Sources Modal & Management
+ * Sources Modal & Management
  */
 function setupSourcesFlow() {
   const modal = document.getElementById('modalSources');
@@ -296,7 +284,6 @@ function setupSourcesFlow() {
   if (btnClose) btnClose.addEventListener('click', closeModal);
   if (btnCancel) btnCancel.addEventListener('click', closeModal);
 
-  // File upload reader
   if (fileUpload) {
     fileUpload.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
@@ -312,14 +299,13 @@ function setupSourcesFlow() {
     });
   }
 
-  // Save source
   if (btnSave) {
     btnSave.addEventListener('click', () => {
       const title = inputTitle?.value.trim() || `Source ${attachedSources.length + 1}`;
       const content = inputContent?.value.trim();
 
       if (!content) {
-        showToast('Please paste or upload some text content first.', 'warning');
+        showToast('Please paste or upload some notes content.', 'warning');
         return;
       }
 
@@ -330,13 +316,13 @@ function setupSourcesFlow() {
       if (inputTitle) inputTitle.value = '';
       if (inputContent) inputContent.value = '';
 
-      showToast(`Attached source: "${title}" to AI memory! 📎`, 'success');
+      showToast(`Attached "${title}" to AI memory! 📎`, 'success');
     });
   }
 }
 
 /**
- * Updates the attached source preview bar above chat input
+ * Updates attached source preview tags
  */
 function updateSourcesPreview() {
   const bar = document.getElementById('sourcesPreviewBar');
@@ -373,15 +359,15 @@ function updateSourcesPreview() {
       const index = parseInt(e.currentTarget.getAttribute('data-index'), 10);
       attachedSources.splice(index, 1);
       updateSourcesPreview();
-      showToast('Source detached.', 'info');
+      showToast('Source removed.', 'info');
     });
   });
 }
 
 /**
- * AI Test Generator Engine (Puter DeepSeek V4.1 with Curriculum Fallback)
+ * AI Test Generation Engine (Puter DeepSeek V4.1 with Curriculum Fallback)
  */
-async function callDeepSeekAI(userPrompt, questionCount) {
+async function callDeepSeekAI(userPrompt, grade, topic, questionCount) {
   let sourcesContext = '';
   if (attachedSources.length > 0) {
     sourcesContext = '\\n\\nTEACHER ATTACHED TEXTBOOK SOURCES:\\n' + 
@@ -389,14 +375,16 @@ async function callDeepSeekAI(userPrompt, questionCount) {
   }
 
   const systemPrompt = `You are Mint AI, an elite academic exam and test generator for schools and tuition teachers.
-Create a high-quality academic test paper based on the user's request.
-User Request: ${userPrompt}
-Number of Questions: ${questionCount}
+Generate a standard school exam paper.
+Target Grade/Level: ${grade}
+Subject / Topic: ${topic}
+Specific Teacher Prompt / Instructions: ${userPrompt || 'Create standard school questions on this topic'}
+Total Questions: ${questionCount}
 ${sourcesContext}
 
-REQUIREMENTS:
-1. Include standard school curriculum question types:
-   - 1-mark definition questions (e.g., "What is mitochondria?", "Define photosynthesis")
+IMPORTANT RULES:
+1. Always include standard school curriculum formats:
+   - 1-mark definition questions (e.g. "What is mitochondria?", "Define velocity")
    - 2 to 3 mark bullet-point differentiation or comparative questions
    - 5-mark structured long-answer questions
    - Fill-in-the-blanks with numbered tokens [blank_1], [blank_2]
@@ -407,9 +395,9 @@ REQUIREMENTS:
 
 JSON Schema:
 {
-  "title": "Exam Title",
-  "subject": "Subject Name",
-  "grade": "Grade / Level",
+  "title": "${topic} Examination",
+  "subject": "${topic}",
+  "grade": "${grade}",
   "totalMarks": ${questionCount * 2.5},
   "questions": [
     {
@@ -442,59 +430,60 @@ JSON Schema:
     }
   }
 
-  // Realistic Curriculum Fallback
-  const topicKeyword = userPrompt.replace(/create|make|generate|test|questions|for|grade|a|an|\d+/gi, '').trim() || 'General Science';
+  // Realistic Standard School Curriculum Fallback
+  const cleanTopic = topic || 'Science: Mitochondria';
   
   return {
-    title: `Exam Paper: ${topicKeyword.charAt(0).toUpperCase() + topicKeyword.slice(1)}`,
-    subject: 'Academic Curriculum',
-    grade: 'Standard',
+    title: `${cleanTopic} Examination`,
+    subject: cleanTopic,
+    grade: grade || 'Grade 10',
     totalMarks: questionCount * 2.5,
     questions: [
       {
         id: 'q1',
         format: '1-Mark Definition',
         marks: 1,
-        questionText: `Define the primary physiological role of ${topicKeyword} in living organisms.`,
-        modelAnswer: `${topicKeyword} is a fundamental biological or physical principle responsible for essential cellular processes and metabolic energy transfer.`,
+        questionText: `What is mitochondria? State its primary function in eukaryotic cells.`,
+        modelAnswer: `Mitochondria are double-membraned cell organelles known as the powerhouse of the cell, responsible for generating ATP (adenosine triphosphate) through cellular respiration.`,
         rubricSteps: [
-          { criterion: 'States clear core definition and scientific mechanism', points: '1.0 Mark' }
+          { criterion: 'Defines double-membraned organelle / powerhouse of cell', points: '0.5 Mark' },
+          { criterion: 'States ATP generation via cellular respiration', points: '0.5 Mark' }
         ]
       },
       {
         id: 'q2',
         format: '2 to 3 Mark Points',
         marks: 3,
-        questionText: `List three distinct characteristics or key stages associated with ${topicKeyword}.`,
-        modelAnswer: `1. Initial phase or structural membrane activation.\\n2. Core biochemical catalysis or conversion step.\\n3. Final stabilization and product release.`,
+        questionText: `State three distinct structural features of the mitochondrion and their physiological significance.`,
+        modelAnswer: `1. Double Membrane: Outer membrane is smooth; inner membrane is folded into cristae to maximize surface area for ATP synthase.\\n2. Matrix: Contains Krebs cycle enzymes, 70S ribosomes, and mitochondrial DNA.\\n3. Intermembrane Space: Generates the proton gradient necessary for chemiosmotic phosphorylation.`,
         rubricSteps: [
-          { criterion: 'First distinct characteristic stated', points: '1.0 Mark' },
-          { criterion: 'Second distinct characteristic stated', points: '1.0 Mark' },
-          { criterion: 'Third distinct characteristic stated', points: '1.0 Mark' }
+          { criterion: 'Identifies outer/inner membrane and cristae function', points: '1.0 Mark' },
+          { criterion: 'Explains matrix contents (enzymes and mtDNA)', points: '1.0 Mark' },
+          { criterion: 'Explains proton gradient in intermembrane space', points: '1.0 Mark' }
         ]
       },
       {
         id: 'q3',
         format: '5-Mark Long Answer',
         marks: 5,
-        questionText: `Describe the complete structural organization of ${topicKeyword}. Explain step-by-step how it contributes to systemic function.`,
-        modelAnswer: `Comprehensive overview of compartmentalization: outer structural boundaries, specialized internal catalysts, energy transformation cycles, and regulatory homeostatic mechanisms.`,
+        questionText: `Explain the complete process of cellular respiration occurring inside the mitochondrion. Differentiate between aerobic and anaerobic pathways.`,
+        modelAnswer: `Cellular respiration involves Glycolysis (cytoplasm), Krebs Cycle (mitochondrial matrix), and Electron Transport Chain (cristae). Aerobic respiration uses oxygen to fully oxidize glucose into CO2 and H2O, yielding 36-38 ATP. Anaerobic respiration occurs without oxygen, producing lactic acid or ethanol with only 2 ATP.`,
         rubricSteps: [
-          { criterion: 'Structural overview and definitions', points: '1.0 Mark' },
-          { criterion: 'Internal mechanistic and molecular progression', points: '2.0 Marks' },
-          { criterion: 'Functional significance and applications', points: '1.0 Mark' },
-          { criterion: 'Summary and scientific conclusion', points: '1.0 Mark' }
+          { criterion: 'Stages of cellular respiration and mitochondrial locations', points: '1.5 Marks' },
+          { criterion: 'Krebs Cycle and Electron Transport mechanism', points: '1.5 Marks' },
+          { criterion: 'Key differences between aerobic and anaerobic respiration', points: '1.0 Mark' },
+          { criterion: 'Summary of total ATP yield and chemical equation', points: '1.0 Mark' }
         ]
       },
       {
         id: 'q4',
         format: 'Fill-in-the-Blanks',
         marks: 1,
-        questionText: `During the cycle of ${topicKeyword}, [blank_1] acts as the initial reactant, releasing energy stored within [blank_2].`,
-        modelAnswer: `[blank_1] Glucose or Substrate\\n[blank_2] Chemical bonds (ATP)`,
+        questionText: `The inner mitochondrial membrane forms numerous folds called [blank_1], which house the enzyme [blank_2] for energy production.`,
+        modelAnswer: `[blank_1] Cristae\\n[blank_2] ATP Synthase`,
         rubricSteps: [
-          { criterion: 'Correctly identifies [blank_1]', points: '0.5 Mark' },
-          { criterion: 'Correctly identifies [blank_2]', points: '0.5 Mark' }
+          { criterion: 'Correctly identifies [blank_1] as Cristae', points: '0.5 Mark' },
+          { criterion: 'Correctly identifies [blank_2] as ATP Synthase', points: '0.5 Mark' }
         ]
       }
     ].slice(0, questionCount)
@@ -502,16 +491,17 @@ JSON Schema:
 }
 
 /**
- * Step 4: Conversational Chat Logic (Sending & Rendering)
+ * Step 2: Floating Chat Flow (Follows User Everywhere)
  */
-function setupChatFlow() {
+function setupFloatingChatFlow() {
   const chatInput = document.getElementById('chatInput');
   const btnSend = document.getElementById('btnSendMessage');
   const chatFeed = document.getElementById('chatFeed');
-  const selectCount = document.getElementById('selectQuickCount');
+  const selectGrade = document.getElementById('selectGrade');
+  const inputTopic = document.getElementById('inputSubjectTopic');
+  const selectCount = document.getElementById('selectQuestionCount');
   const chatHero = document.getElementById('chatHero');
 
-  // Auto-resize input textarea
   if (chatInput) {
     chatInput.addEventListener('input', () => {
       chatInput.style.height = 'auto';
@@ -521,7 +511,7 @@ function setupChatFlow() {
     chatInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendMessage();
+        triggerGenerate();
       }
     });
   }
@@ -529,11 +519,11 @@ function setupChatFlow() {
   if (btnSend) {
     btnSend.addEventListener('click', (e) => {
       e.preventDefault();
-      sendMessage();
+      triggerGenerate();
     });
   }
 
-  // Suggestion prompt chips
+  // Suggestion idea chips
   document.querySelectorAll('.suggestion-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       const prompt = chip.getAttribute('data-prompt');
@@ -542,14 +532,14 @@ function setupChatFlow() {
         chatInput.style.height = 'auto';
         chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
       }
-      sendMessage();
+      triggerGenerate();
     });
   });
 
-  async function sendMessage() {
-    const text = chatInput?.value.trim();
-    if (!text) return;
-
+  async function triggerGenerate() {
+    const text = chatInput?.value.trim() || '';
+    const grade = selectGrade?.value || 'Grade 10';
+    const topic = inputTopic?.value.trim() || 'Science: Mitochondria';
     const count = parseInt(selectCount?.value, 10) || 4;
     const currentMints = getState().mints;
 
@@ -563,23 +553,24 @@ function setupChatFlow() {
       return;
     }
 
-    // Hide hero once conversation starts
+    // Hide hero once generation starts
     if (chatHero) chatHero.hidden = true;
 
-    // 1. Append User Message Bubble
-    appendUserBubble(text);
+    // 1. Append User Bubble showing request
+    const userDisplayMsg = text || `Generate ${count} questions on ${topic} (${grade})`;
+    appendUserBubble(userDisplayMsg);
+
     chatInput.value = '';
     chatInput.style.height = 'auto';
 
     // 2. Append Thinking Indicator
     const thinkingRow = appendThinkingIndicator();
 
-    // UI Loading state
     if (btnSend) btnSend.disabled = true;
 
     try {
-      // 3. Call DeepSeek AI
-      const testData = await callDeepSeekAI(text, count);
+      // 3. Call AI with Grade, Topic, Count, and Attached Sources
+      const testData = await callDeepSeekAI(text, grade, topic, count);
 
       // Deduct Mints
       setState({
@@ -594,15 +585,15 @@ function setupChatFlow() {
       }
 
       // 4. Render AI Response and Generated Test Paper
-      appendAIResponse(testData, text, count);
-      showToast(`Exam paper generated! Used ${count} Mints. ✨`, 'success');
+      appendAIResponse(testData, count);
+      showToast(`Generated ${testData.questions.length} questions! Used ${count} Mints. ✨`, 'success');
 
     } catch (err) {
-      console.error('Error generating chat test:', err);
+      console.error('Error generating test:', err);
       if (thinkingRow && thinkingRow.parentNode) {
         thinkingRow.parentNode.removeChild(thinkingRow);
       }
-      appendErrorMessage('I encountered an error generating the test. Please try again!');
+      appendErrorMessage('An error occurred during generation. Please try again!');
     } finally {
       if (btnSend) btnSend.disabled = false;
       scrollToBottom();
@@ -625,7 +616,7 @@ function setupChatFlow() {
         <div class="thinking-dots">
           <span></span><span></span><span></span>
         </div>
-        <span>Mint AI is drafting your exam questions with DeepSeek...</span>
+        <span>Mint AI is writing standard school questions with DeepSeek...</span>
       </div>
     `;
     chatFeed.appendChild(row);
@@ -641,12 +632,10 @@ function setupChatFlow() {
     scrollToBottom();
   }
 
-  function appendAIResponse(testData, userPrompt, count) {
+  function appendAIResponse(testData, count) {
     const row = document.createElement('div');
     row.className = 'chat-message-row';
-
     const testId = 'test_' + Date.now();
-    const isTeacher = getState().role === 'teacher';
 
     let questionsHtml = '';
     testData.questions.forEach((q, idx) => {
@@ -705,7 +694,7 @@ function setupChatFlow() {
     row.innerHTML = `
       <div class="ai-response-wrapper">
         <div class="ai-message-bubble">
-          I've generated a <strong>${testData.questions.length}-question</strong> exam paper on <strong>${testData.title}</strong> using DeepSeek V4.1. Here is your complete test sheet and teacher answer key:
+          Here is your <strong>${testData.questions.length}-question</strong> exam paper for <strong>${testData.grade}</strong> on <strong>${testData.title}</strong>:
         </div>
 
         <div class="generated-test-paper" id="${testId}">
@@ -738,7 +727,7 @@ function setupChatFlow() {
 
     chatFeed.appendChild(row);
 
-    // Wire Print Button on this card
+    // Wire Print
     const printBtn = row.querySelector('.btn-print-paper');
     if (printBtn) {
       printBtn.addEventListener('click', () => {
@@ -746,7 +735,7 @@ function setupChatFlow() {
       });
     }
 
-    // Wire Export JSON button
+    // Wire Export JSON
     const exportBtn = row.querySelector('.btn-export-paper-json');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
@@ -761,12 +750,12 @@ function setupChatFlow() {
       });
     }
 
-    // Wire Thumbs Up / Down ratings
+    // Wire Memory Ratings
     row.querySelectorAll('.btn-thumb').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', () => {
         const type = btn.getAttribute('data-feedback');
         btn.classList.add(type === 'up' ? 'active-positive' : 'active-negative');
-        showToast(type === 'up' ? 'Saved preference: AI will use this style! 👍' : 'Feedback noted: AI will adjust future questions. 👎', 'info');
+        showToast(type === 'up' ? 'Saved: AI will use this style! 👍' : 'Feedback noted: AI will adjust future questions. 👎', 'info');
       });
     });
 
@@ -778,7 +767,7 @@ function setupChatFlow() {
     if (main) {
       setTimeout(() => {
         main.scrollTop = main.scrollHeight;
-      }, 50);
+      }, 60);
     }
   }
 
@@ -790,7 +779,7 @@ function setupChatFlow() {
 }
 
 /**
- * Sets up Mints Economy (Daily bonus claim & dev refills)
+ * Economy & Wallet Flow
  */
 function setupEconomyFlow() {
   const btnTopBonus = document.getElementById('btnDailyBonus');
@@ -853,7 +842,7 @@ function setupEconomyFlow() {
 }
 
 /**
- * Sets up Apple Theme Toggle (Light / Dark)
+ * Theme Flow
  */
 function setupThemeFlow() {
   initTheme();
@@ -870,30 +859,25 @@ function setupThemeFlow() {
 }
 
 /**
- * Main Initializer
+ * Main Init
  */
 export function initApp() {
   setupThemeFlow();
-  setupAuthFlow();
-  setupRoleFlow();
+  setupUnifiedAuthFlow();
   setupSourcesFlow();
-  setupChatFlow();
+  setupFloatingChatFlow();
   setupEconomyFlow();
 
-  // Reactive state listeners
   on('mint:currency-changed', (detail) => {
     if (detail && typeof detail.mints === 'number') {
       updateMintsUI(detail.mints);
     }
   });
 
-  // Initial balance sync
   updateMintsUI(getState().mints);
-
-  console.log('Mint AI: Initialized successfully with Apple Conversational Flow.');
+  console.log('Mint AI: Initialized with unified login and sticky floating input bar.');
 }
 
-// Auto-boot on DOM ready
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);

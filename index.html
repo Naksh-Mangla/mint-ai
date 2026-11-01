@@ -25,33 +25,54 @@
 <body class="mint-app-body">
 
   <!-- ======================================================== -->
-  <!-- STEP 1: AUTH SCREEN (Login / Create Account)             -->
+  <!-- STEP 1: UNIFIED LOGIN + NAME + ROLE SELECTION SCREEN     -->
   <!-- ======================================================== -->
   <div id="screenAuth" class="onboarding-screen">
     <div class="apple-glass-card auth-card">
+      
       <div class="auth-brand">
         <div class="brand-icon-wrap">
-          <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#00A368" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="#00A368" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
           </svg>
         </div>
         <h1 class="auth-title">Welcome to Mint <span class="brand-accent">AI</span></h1>
-        <p class="auth-subtitle">The intelligent exam and study companion for teachers & students</p>
+        <p class="auth-subtitle">Log in and select your role to start generating tests</p>
       </div>
 
       <form id="formAuth" class="auth-form">
+        
+        <!-- 1. Name -->
         <div class="form-group">
-          <label for="inputAuthName" class="form-label">Full Name</label>
+          <label for="inputAuthName" class="form-label">Your Name</label>
           <input type="text" id="inputAuthName" class="apple-input" placeholder="e.g. Sarah Jenkins" required autofocus>
         </div>
 
+        <!-- 2. Email or Username -->
         <div class="form-group">
           <label for="inputAuthEmail" class="form-label">Email or Username</label>
           <input type="text" id="inputAuthEmail" class="apple-input" placeholder="e.g. sarah@school.edu" required>
         </div>
 
+        <!-- 3. Role Selector (Teacher vs Student) -->
+        <div class="form-group">
+          <label class="form-label">Select Your Role</label>
+          <div class="role-segmented-picker">
+            <button type="button" class="role-segment-btn active" id="btnPickerTeacher" data-role="teacher">
+              <span class="segment-icon">👨‍🏫</span>
+              <span class="segment-label">Teacher</span>
+            </button>
+            <button type="button" class="role-segment-btn" id="btnPickerStudent" data-role="student">
+              <span class="segment-icon">🎓</span>
+              <span class="segment-label">Student</span>
+            </button>
+          </div>
+          <p class="role-hint" id="rolePickerHint">Teacher mode creates exam papers, answer keys, and printable A4 worksheets.</p>
+        </div>
+
+        <!-- Submit Button -->
         <button type="submit" class="apple-button btn-primary btn-block" id="btnAuthSubmit">
-          <span>Continue to Mint AI</span>
+          <span>Enter Mint AI</span>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
@@ -59,7 +80,7 @@
         </button>
 
         <div class="auth-divider">
-          <span>or connect free cloud sync</span>
+          <span>or one-click cloud login</span>
         </div>
 
         <button type="button" class="apple-button btn-secondary btn-block" id="btnPuterQuickSignIn">
@@ -69,49 +90,12 @@
           <span>Sign In with Puter Cloud</span>
         </button>
       </form>
+
     </div>
   </div>
 
   <!-- ======================================================== -->
-  <!-- STEP 2: ROLE SELECTION SCREEN (Teacher or Student)       -->
-  <!-- ======================================================== -->
-  <div id="screenRole" class="onboarding-screen" hidden>
-    <div class="apple-glass-card role-card-wrapper">
-      <div class="auth-brand">
-        <h2 class="auth-title">Choose Your Role</h2>
-        <p class="auth-subtitle">Select how you want to use Mint AI today</p>
-      </div>
-
-      <div class="role-selection-grid">
-        <!-- Teacher Role Card -->
-        <div class="role-option-card" id="cardRoleTeacher" tabindex="0" role="button" aria-pressed="false" data-role="teacher">
-          <div class="role-icon">👨‍🏫</div>
-          <h3 class="role-name">Teacher</h3>
-          <p class="role-desc">Generate standard school tests, 1-mark definitions, 3-mark bullet points, 5-mark long answers, model answer keys, and printable A4 worksheets.</p>
-          <div class="role-check-indicator">✓</div>
-        </div>
-
-        <!-- Student Role Card -->
-        <div class="role-option-card" id="cardRoleStudent" tabindex="0" role="button" aria-pressed="false" data-role="student">
-          <div class="role-icon">🎓</div>
-          <h3 class="role-name">Student</h3>
-          <p class="role-desc">Practice custom exam questions, test your knowledge, check step-by-step marking rubrics, and strengthen your weak areas.</p>
-          <div class="role-check-indicator">✓</div>
-        </div>
-      </div>
-
-      <button type="button" class="apple-button btn-primary btn-block btn-role-confirm" id="btnConfirmRole" disabled>
-        <span>Enter Mint AI Studio</span>
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-          <polyline points="12 5 19 12 12 19"></polyline>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- ======================================================== -->
-  <!-- STEP 3: CLEAN CHAT & TEST GENERATOR WORKSPACE            -->
+  <!-- STEP 2: CONVERSATIONAL STUDIO (Floating Bar Follows You) -->
   <!-- ======================================================== -->
   <div id="screenApp" class="app-workspace" hidden>
     
@@ -132,7 +116,7 @@
       </div>
 
       <div class="topbar-right">
-        <!-- Sources indicator -->
+        <!-- Sources status badge -->
         <button type="button" class="sources-status-pill" id="btnTopSources" title="View attached sources">
           <span class="source-icon">📎</span>
           <span id="topSourcesCount">0 Sources</span>
@@ -164,94 +148,131 @@
       </div>
     </header>
 
-    <!-- Chat Messages Scroll Container -->
+    <!-- Main Scrollable Chat Area -->
     <main class="chat-main-container" id="chatMainContainer">
       
-      <!-- Welcome Hero (Displayed when conversation is fresh) -->
+      <!-- Welcome Hero -->
       <section class="chat-hero-section" id="chatHero">
         <div class="hero-sparkle">✨</div>
         <h1 class="chat-hero-title">hey welcome to mint ai</h1>
         <p class="chat-hero-desc" id="heroRoleDesc">
-          I generate standard school exam papers, definitions, multi-mark questions, and full marking rubrics in seconds. Type your request or attach your notes below!
+          Pick your grade, topic, and number of questions below, or talk to me like an AI assistant to make tests!
         </p>
 
-        <!-- Suggestion Prompt Chips -->
+        <!-- Quick Idea Chips -->
         <div class="suggestion-chips-grid">
-          <button type="button" class="suggestion-chip" data-prompt="Create a 4-question Science test on Mitochondria and Cellular Respiration for Grade 9 with marking rubric">
-            🧬 4-Question Test: Mitochondria & Respiration
+          <button type="button" class="suggestion-chip" data-prompt="What is mitochondria? Explain in 3 points with marking rubric">
+            🧬 "What is mitochondria?" (3 Points)
           </button>
-          <button type="button" class="suggestion-chip" data-prompt="Generate a 1-mark definition worksheet on Photosynthesis with model answers">
-            🌿 1-Mark Definitions: Photosynthesis
+          <button type="button" class="suggestion-chip" data-prompt="Create 4 standard questions on Photosynthesis with answer key">
+            🌿 Photosynthesis Exam Paper
           </button>
-          <button type="button" class="suggestion-chip" data-prompt="Make a 5-mark long answer exam question on Newton's Laws of Motion with step-by-step grading criteria">
-            ⚡ 5-Mark Long Answer: Newton's Laws
+          <button type="button" class="suggestion-chip" data-prompt="Make a 5-mark long answer question on Newton's Laws with grading criteria">
+            ⚡ Newton's Laws 5-Mark Question
           </button>
-          <button type="button" class="suggestion-chip" data-prompt="Create a fill-in-the-blanks practice worksheet on Chemical Reactions for Grade 10">
-            🧪 Fill-in-the-Blanks: Chemical Reactions
+          <button type="button" class="suggestion-chip" data-prompt="Generate fill-in-the-blanks test on Chemical Reactions">
+            🧪 Chemical Reactions Blanks
           </button>
         </div>
       </section>
 
-      <!-- Message History Container -->
-      <div class="chat-feed" id="chatFeed">
-        <!-- Messages & Generated Test Cards dynamically rendered here -->
-      </div>
+      <!-- Chat Feed (Messages & Test Papers rendered here) -->
+      <div class="chat-feed" id="chatFeed"></div>
 
     </main>
 
-    <!-- Floating Apple Chat Input Bar -->
-    <footer class="chat-input-container">
+    <!-- ======================================================== -->
+    <!-- FLOATING TYPE BAR (STICKS AND FOLLOWS YOU EVERYWHERE)    -->
+    <!-- ======================================================== -->
+    <footer class="chat-floating-bar-wrapper" id="floatingBarWrapper">
       
-      <!-- Active Attached Sources Bar (preview pills) -->
+      <!-- Active Attached Sources Tags (if any) -->
       <div class="attached-sources-preview" id="sourcesPreviewBar" hidden>
         <span class="sources-label">Attached Sources:</span>
         <div class="sources-tags-list" id="sourcesTagsList"></div>
       </div>
 
-      <div class="apple-glass-card chat-input-bar">
+      <!-- Main Floating Apple Card -->
+      <div class="apple-glass-card floating-input-card">
         
-        <!-- Add Sources Button -->
-        <button type="button" class="btn-add-sources" id="btnOpenSourceModal" title="Attach textbook notes, syllabus, or chapters">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          <span>Add Sources</span>
-        </button>
+        <!-- Top Controls: Grade, Topic/Subject, Count, and Add Sources -->
+        <div class="floating-controls-row">
+          
+          <!-- 1. Grade Selector -->
+          <div class="control-item">
+            <label for="selectGrade" class="control-label">Grade</label>
+            <select id="selectGrade" class="apple-select-compact">
+              <option value="Grade 6">Grade 6</option>
+              <option value="Grade 7">Grade 7</option>
+              <option value="Grade 8">Grade 8</option>
+              <option value="Grade 9">Grade 9</option>
+              <option value="Grade 10" selected>Grade 10</option>
+              <option value="Grade 11">Grade 11</option>
+              <option value="Grade 12">Grade 12</option>
+            </select>
+          </div>
 
-        <!-- Chat Textarea Input -->
-        <div class="input-field-wrap">
-          <textarea 
-            id="chatInput" 
-            class="chat-textarea" 
-            rows="1" 
-            placeholder="Type like talking to AI... e.g. 'Make a 5-question test on Cell Structure for Grade 8'" 
-            aria-label="Ask Mint AI to generate a test"></textarea>
+          <!-- 2. Subject / Topic Picker -->
+          <div class="control-item">
+            <label for="inputSubjectTopic" class="control-label">Subject / Topic</label>
+            <input type="text" id="inputSubjectTopic" class="apple-input-compact" placeholder="e.g. Science: Mitochondria" value="Science: Mitochondria">
+          </div>
+
+          <!-- 3. Question Count -->
+          <div class="control-item">
+            <label for="selectQuestionCount" class="control-label">Questions</label>
+            <select id="selectQuestionCount" class="apple-select-compact">
+              <option value="1">1 Question (1 Mint)</option>
+              <option value="2">2 Questions (2 Mints)</option>
+              <option value="3">3 Questions (3 Mints)</option>
+              <option value="4" selected>4 Questions (4 Mints)</option>
+              <option value="5">5 Questions (5 Mints)</option>
+              <option value="8">8 Questions (8 Mints)</option>
+              <option value="10">10 Questions (10 Mints)</option>
+            </select>
+          </div>
+
+          <!-- 4. Add Sources Button -->
+          <div class="control-item">
+            <label class="control-label">&nbsp;</label>
+            <button type="button" class="btn-add-sources" id="btnOpenSourceModal" title="Attach textbook notes, syllabus, or chapter files">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Add Sources</span>
+            </button>
+          </div>
+
         </div>
 
-        <!-- Question Count Selector -->
-        <div class="quick-options-wrap">
-          <select id="selectQuickCount" class="apple-select-mini" title="Number of questions">
-            <option value="4" selected>4 Questions (4 Mints)</option>
-            <option value="6">6 Questions (6 Mints)</option>
-            <option value="8">8 Questions (8 Mints)</option>
-            <option value="10">10 Questions (10 Mints)</option>
-          </select>
-        </div>
+        <!-- Bottom Row: Text input bar with send button -->
+        <div class="floating-input-row">
+          
+          <div class="input-textarea-wrap">
+            <textarea 
+              id="chatInput" 
+              class="chat-textarea" 
+              rows="1" 
+              placeholder="Type like talking to AI... e.g. 'What is mitochondria? Give 1-mark definition and 3-mark explanation'..." 
+              aria-label="Ask Mint AI to generate a test"></textarea>
+          </div>
 
-        <!-- Send Button -->
-        <button type="button" class="btn-send-message" id="btnSendMessage" aria-label="Send message to Mint AI">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-        </button>
+          <button type="button" class="btn-send-message" id="btnSendMessage" aria-label="Generate Test">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+
+        </div>
 
       </div>
 
-      <div class="input-subtext">
-        <span>Mint AI uses DeepSeek V4.1. Tests deduct 1 Mint per question. Press Enter to generate.</span>
+      <div class="floating-bar-hint">
+        <span>The typing bar follows you everywhere. Press Enter or click arrow to generate. (1 Question = 1 Mint)</span>
       </div>
+
     </footer>
 
   </div>
@@ -271,10 +292,9 @@
 
       <div class="modal-body">
         <p class="modal-description">
-          Add textbook paragraphs, syllabus notes, or chapter text. Mint AI will craft standard exam questions based specifically on your materials!
+          Paste textbook paragraphs, syllabus notes, or chapter text. Mint AI will craft questions directly from your materials!
         </p>
 
-        <!-- Paste Text Area -->
         <div class="form-group">
           <label for="inputSourceTitle" class="form-label">Source Title</label>
           <input type="text" id="inputSourceTitle" class="apple-input" placeholder="e.g. Chapter 4: Mitochondria & ATP Notes">
@@ -346,7 +366,7 @@
     </div>
   </dialog>
 
-  <!-- Hidden Toast Container -->
+  <!-- Toast Notification Container -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
 </body>
